@@ -53,7 +53,7 @@ mvn javadoc:javadoc scala:doc
 # Example Usage
 
 For example, if my class looks like this:
-```
+```scala
 package com.my.package
 
 class MyClass extends TestPlugin {
