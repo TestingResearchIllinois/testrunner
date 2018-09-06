@@ -1,16 +1,29 @@
 package com.reedoei.testrunner.testobjects
 
-import org.junit.Test
+import java.lang.annotation.Annotation
+
+import scala.util.Try
 
 object GeneralTestClass {
-    def create(clz: Class[_]): Option[GeneralTestClass] = {
+    /**
+      * Create a test class from given class name.
+      *
+      * We must pass in a classloader because we must load EXACTLY the same classes as used by the subject
+      * which may differ from the versions used by this plugin/maven
+      */
+    def create(loader: ClassLoader, clzName: String): Option[GeneralTestClass] = {
+        val testAnnotation: Class[_ <: Annotation] =
+            loader.loadClass("org.junit.Test").asInstanceOf[Class[_ <: Annotation]]
+
+        val clz = loader.loadClass(clzName)
+
         val methods = clz.getMethods.toStream
 
-        if (methods.exists(m => m.getAnnotation(classOf[Test]) != null)) {
-            Option(new JUnitTestClass(clz))
-        } else {
-            Option.empty
-        }
+        Try(if (methods.exists(_.getAnnotation(testAnnotation) != null)) {
+                Option(new JUnitTestClass(loader, clz))
+            } else {
+                Option.empty
+            }).toOption.flatten
     }
 }
 

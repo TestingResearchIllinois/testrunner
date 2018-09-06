@@ -1,17 +1,22 @@
 package com.reedoei.testrunner.testobjects
 
-import org.junit.Test
+import java.lang.annotation.Annotation
+
 import org.junit.runners.model.{FrameworkMethod, TestClass}
 
 import scala.collection.JavaConverters._
 
-class JUnitTestClass(clz: Class[_]) extends GeneralTestClass {
+class JUnitTestClass(loader: ClassLoader, clz: Class[_]) extends GeneralTestClass {
     private def junitTestClass: TestClass = new TestClass(clz)
 
     def fullyQualifiedName(fm: FrameworkMethod): String =
-        fm.getDeclaringClass.getCanonicalName ++ fm.getName
+        fm.getDeclaringClass.getCanonicalName ++ "." ++ fm.getName
 
-    override def tests(): Stream[String] =
-        junitTestClass.getAnnotatedMethods(classOf[Test]).asScala.toStream
+    override def tests(): Stream[String] = {
+        val testAnnotation: Class[_ <: Annotation] =
+            loader.loadClass("org.junit.Test").asInstanceOf[Class[_ <: Annotation]]
+
+        junitTestClass.getAnnotatedMethods(testAnnotation).asScala.toStream
             .map(fullyQualifiedName)
+    }
 }

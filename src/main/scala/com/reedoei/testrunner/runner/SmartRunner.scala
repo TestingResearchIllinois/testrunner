@@ -1,10 +1,24 @@
 package com.reedoei.testrunner.runner
 
-import com.reedoei.eunomia.subject.Subject
-import com.reedoei.testrunner.execution.TestExecutorProvider
-import com.reedoei.testrunner.data.results.TestRunResult
+import java.util.concurrent.TimeUnit
 
-class SmartRunner extends Runner {
-    override def run(subject: Subject, testOrder: List[String]): Option[TestRunResult] =
-        TestExecutorProvider.withSubject(subject).map(e => e.run(testOrder))
+import com.reedoei.testrunner.data.framework.TestFramework
+import com.reedoei.testrunner.util.{ExecutionInfo, ExecutionInfoBuilder}
+import org.apache.maven.project.MavenProject
+
+class SmartRunner(mavenProject: MavenProject, testFramework: TestFramework, infoStore: TestInfoStore) extends Runner {
+    def timeoutFor(testOrder: Stream[String]): Long = ???
+
+    override def execution(testOrder: Stream[String], executionInfoBuilder: ExecutionInfoBuilder): ExecutionInfo = {
+        executionInfoBuilder.timeout(timeoutFor(testOrder), TimeUnit.SECONDS).build()
+    }
+
+    override def framework(): TestFramework = testFramework
+
+    override def project(): MavenProject = mavenProject
+}
+
+object SmartRunner extends RunnerProvider[SmartRunner] {
+    override def withFramework(project: MavenProject, framework: TestFramework): SmartRunner =
+        new SmartRunner(project, framework, new TestInfoStore)
 }

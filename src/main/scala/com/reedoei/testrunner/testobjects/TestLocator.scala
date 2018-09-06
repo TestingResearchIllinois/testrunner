@@ -2,6 +2,7 @@ package com.reedoei.testrunner.testobjects
 
 import java.nio.file.{Path, Paths}
 
+import com.reedoei.testrunner.util.MavenClassLoader
 import org.apache.maven.plugin.surefire.util.DirectoryScanner
 import org.apache.maven.project.MavenProject
 import org.apache.maven.surefire.testset.TestListResolver
@@ -18,6 +19,6 @@ object TestLocator {
     def tests(project: MavenProject): Stream[String] =
         testClasses(project).flatMap(className =>
             GeneralTestClass
-                .create(Class.forName(className))
+                .create(new MavenClassLoader(project).loader, className)
                 .map(c => c.tests()).getOrElse(Stream.empty))
 }
