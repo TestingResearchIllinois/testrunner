@@ -1,29 +1,35 @@
 package com.reedoei.testrunner.data.results;
 
 import com.google.gson.Gson;
-import com.reedoei.testrunner.data.results.TestResult;
 import illinois.cs.dt.tools.diagnosis.DiffContainer;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class TestRunResult {
     public static TestRunResult empty() {
-        return new TestRunResult(new HashMap<>(), new HashMap<>());
+        return new TestRunResult(new ArrayList<>(), new HashMap<>(), new HashMap<>());
     }
 
+    private final List<String> testOrder;
     private final Map<String, TestResult> results;
     private final Map<String, DiffContainer> diffs;
 
-    public TestRunResult(final Map<String, TestResult> results, final Map<String, DiffContainer> diffs) {
+    public TestRunResult(final List<String> testOrder, final Map<String, TestResult> results, final Map<String, DiffContainer> diffs) {
+        this.testOrder = testOrder;
         this.results = results;
         this.diffs = diffs;
+    }
+
+    public List<String> testOrder() {
+        return testOrder;
     }
 
     public Map<String, TestResult> results() {

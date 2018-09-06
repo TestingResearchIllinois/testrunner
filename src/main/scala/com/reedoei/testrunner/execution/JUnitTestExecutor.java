@@ -15,7 +15,6 @@ import org.junit.runner.notification.Failure;
 import org.junit.runners.model.InitializationError;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -27,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class JUnitTestExecutor {
     public static TestRunResult runOrder(final ClassLoader loader,
@@ -306,6 +306,10 @@ public class JUnitTestExecutor {
 
         final TestRunResult finalResult = TestRunResult.empty();
 
+        for (final JUnitTest test : runner.tests()) {
+            finalResult.testOrder().add(test.name());
+        }
+
         for (final TestResult result : results) {
             finalResult.results().put(result.name(), result);
         }
@@ -334,7 +338,10 @@ public class JUnitTestExecutor {
             final JUnitTestRunner runner = new JUnitTestRunner(testOrder);
             final TestRunResult results = execute(runner);
 
-            return Optional.of(new TestRunResult(results.results(), runner.getStateDiffs()));
+            final List<String> testOrderNames =
+                    testOrder.stream().map(JUnitTest::name).collect(Collectors.toList());
+
+            return Optional.of(new TestRunResult(testOrderNames, results.results(), runner.getStateDiffs()));
         } catch (InitializationError initializationError) {
             initializationError.printStackTrace();
         }
