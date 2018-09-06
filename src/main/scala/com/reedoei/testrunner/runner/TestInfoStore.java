@@ -1,7 +1,6 @@
 package com.reedoei.testrunner.runner;
 
 import com.reedoei.testrunner.configuration.Configuration;
-import com.reedoei.testrunner.data.results.TestResult;
 import com.reedoei.testrunner.data.results.TestRunResult;
 import scala.Option;
 
@@ -10,15 +9,20 @@ import java.util.List;
 import java.util.Map;
 
 public class TestInfoStore {
-    // This is the time to use when we don't know how long dts should take.
+    // This is the time to use when we don't know how long the tests should take.
     // This time is still affected by the other modifiers below.
-    private static final long MAX_DEFAULT_TIMEOUT = (long) Configuration.config().getProperty("runner.timeout.default", 3 * 3600);
-    // How much longer we should wait than expected.
-    private static final double TIMEOUT_MULTIPLIER = Configuration.config().getProperty("runner.timeout.multiplier", 4.0);
+    // The default is 6 hours
+    private static final long MAX_DEFAULT_TIMEOUT =
+            (long) Configuration.config().getProperty("testplugin.runner.smart.timeout.default", 6 * 3600);
+    // How much longer we should wait than expected
+    private static final double TIMEOUT_MULTIPLIER =
+            Configuration.config().getProperty("testplugin.runner.smart.timeout.multiplier", 4.0);
     // Adds a flat number of seconds to all timeouts
-    private static final double TIMEOUT_OFFSET = Configuration.config().getProperty("runner.timeout.offset", 5.0);
-    // Add a flat number of seconds per test.
-    private static final double PER_TEST_MULTIPLIER = Configuration.config().getProperty("runner.timeout.pertest", 2.0);
+    private static final double TIMEOUT_OFFSET =
+            Configuration.config().getProperty("testplugin.runner.smart.timeout.offset", 5.0);
+    // Add a flat number of seconds per test
+    private static final double PER_TEST_MULTIPLIER =
+            Configuration.config().getProperty("testplugin.runner.smart.timeout.pertest", 2.0);
 
     private final Map<String, TestInfo> testInfo = new HashMap<>();
 

@@ -46,5 +46,5 @@ trait RunnerProvider[A <: Runner] {
 
 object RunnerProvider {
     def from(project: MavenProject): Option[Runner] =
-        TestFramework.testFramework(project).map(FixedOrderRunner.withFramework(project, _))
+        TestFramework.testFramework(project).map(SmartRunner.withFramework(project, _))
 }

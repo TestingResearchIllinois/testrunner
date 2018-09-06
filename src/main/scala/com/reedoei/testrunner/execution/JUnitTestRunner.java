@@ -57,8 +57,6 @@ public class JUnitTestRunner extends BlockJUnit4ClassRunner {
         return methods;
     }
 
-    public static final int DEFAULT_TEST_TIMEOUT = 6;
-
     private final Set<String> ranBeforeClassSet = new HashSet<>();
     private final List<JUnitTest> tests = new ArrayList<>();
     private final Map<String, DiffContainer> stateDiffs = new HashMap<>();
@@ -93,7 +91,7 @@ public class JUnitTestRunner extends BlockJUnit4ClassRunner {
 
         for (final JUnitTest test : tests) {
             try {
-                System.out.println("Test being executed: " + fullName(test.description()));
+//                System.out.println("Test being executed: " + fullName(test.description()));
                 runChild(test, notifier);
             } catch (AssumptionViolatedException e) {
                 testNotifier.fireTestIgnored();
