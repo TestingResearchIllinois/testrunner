@@ -1,6 +1,6 @@
-package illinois.cs.dt.tools.diagnosis;
+package edu.illinois.cs.dt.tools.diagnosis;
 
-import illinois.diaper.StateCapture;
+import edu.illinois.diaper.StateCapture;
 import org.junit.runners.model.Statement;
 
 import java.util.HashMap;

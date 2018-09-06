@@ -17,6 +17,9 @@ import scala.util.{Failure, Try}
 import scala.collection.JavaConverters._
 
 trait Runner {
+    def runList(testOrder: java.util.List[String]): Option[TestRunResult] =
+        run(testOrder.asScala.toStream)
+
     def run(testOrder: Stream[String]): Option[TestRunResult] =
         TempFiles.withSeq(testOrder)(path => TempFiles.withTempFile(outputPath => {
             val cp = new MavenClassLoader(project()).classpath()
@@ -51,11 +54,11 @@ trait Runner {
     def execution(testOrder: Stream[String], executionInfoBuilder: ExecutionInfoBuilder): ExecutionInfo
 }
 
-trait RunnerProvider[A <: Runner] {
+trait RunnerFactory[A <: Runner] {
     def withFramework(project: MavenProject, framework: TestFramework): A
 }
 
-object RunnerProvider {
+object RunnerFactory {
     def from(project: MavenProject): Option[Runner] =
         TestFramework.testFramework(project).map(SmartRunner.withFramework(project, _))
 }

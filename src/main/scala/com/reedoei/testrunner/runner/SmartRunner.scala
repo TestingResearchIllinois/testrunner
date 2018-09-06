@@ -42,7 +42,7 @@ class SmartRunner(mavenProject: MavenProject, testFramework: TestFramework, info
     def timeoutFor(testOrder: Stream[String]): Long = infoStore.getTimeout(testOrder.toList.asJava)
 }
 
-object SmartRunner extends RunnerProvider[SmartRunner] {
+object SmartRunner extends RunnerFactory[SmartRunner] {
     override def withFramework(project: MavenProject, framework: TestFramework): SmartRunner =
         new SmartRunner(project, framework, new TestInfoStore)
 }

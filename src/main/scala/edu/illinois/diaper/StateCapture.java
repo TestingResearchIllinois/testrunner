@@ -1,8 +1,8 @@
-package illinois.diaper;
+package edu.illinois.diaper;
 
 import com.thoughtworks.xstream.XStream;
 import com.thoughtworks.xstream.io.xml.DomDriver;
-import illinois.diaper.agent.MainAgent;
+import edu.illinois.diaper.agent.MainAgent;
 import org.custommonkey.xmlunit.DetailedDiff;
 import org.custommonkey.xmlunit.Diff;
 import org.custommonkey.xmlunit.Difference;

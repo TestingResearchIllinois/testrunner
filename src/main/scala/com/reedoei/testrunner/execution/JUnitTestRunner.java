@@ -1,8 +1,8 @@
 package com.reedoei.testrunner.execution;
 
 import com.reedoei.testrunner.configuration.Configuration;
-import illinois.cs.dt.tools.diagnosis.DiffContainer;
-import illinois.cs.dt.tools.diagnosis.StateDiff;
+import edu.illinois.cs.dt.tools.diagnosis.DiffContainer;
+import edu.illinois.cs.dt.tools.diagnosis.StateDiff;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -234,7 +234,7 @@ public class JUnitTestRunner extends BlockJUnit4ClassRunner {
         result.addAll(test.testClass().getAnnotatedFieldValues(target, Rule.class, TestRule.class));
 
         // Add a timeout rule to every test if enabled
-        final int universalTimeout = Configuration.config().getProperty("runner.timeout.universal", -1);
+        final int universalTimeout = Configuration.config().getProperty("testplugin.runner.timeout.universal", -1);
         if (universalTimeout > 0) {
             result.add(Timeout.builder()
                     .withLookingForStuckThread(true)
@@ -302,7 +302,7 @@ public class JUnitTestRunner extends BlockJUnit4ClassRunner {
                             beforeClasses(test).evaluate();
                         }
 
-                        if (Configuration.config().getProperty("runner.capture_state", false)) {
+                        if (Configuration.config().getProperty("testplugin.runner.capture_state", false)) {
                             stateDiffs.put(test.name(), new StateDiff(test.name()).diff(statement));
                         } else {
                             statement.evaluate();

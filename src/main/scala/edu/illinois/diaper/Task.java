@@ -1,4 +1,4 @@
-package illinois.diaper;
+package edu.illinois.diaper;
 
 public enum Task {
     SERIALIZATION,

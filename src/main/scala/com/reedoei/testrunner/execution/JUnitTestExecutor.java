@@ -7,8 +7,8 @@ import com.reedoei.testrunner.data.results.TestRunResult;
 import com.thoughtworks.xstream.XStream;
 import com.thoughtworks.xstream.io.xml.DomDriver;
 import com.thoughtworks.xstream.security.AnyTypePermission;
-import illinois.cs.dt.tools.diagnosis.DiffContainer;
-import illinois.diaper.StateCapture;
+import edu.illinois.cs.dt.tools.diagnosis.DiffContainer;
+import edu.illinois.diaper.StateCapture;
 import org.junit.runner.JUnitCore;
 import org.junit.runner.Result;
 import org.junit.runner.notification.Failure;
@@ -291,7 +291,7 @@ public class JUnitTestExecutor {
         final Result re;
         re = core.run(runner);
 
-        if (Configuration.config().getProperty("runner.capture_state", false)) {
+        if (Configuration.config().getProperty("testplugin.runner.capture_state", false)) {
             try {
                 Files.write(Paths.get("state-diff.xml"), serializeRoots(runner.getStateDiffs()).getBytes());
             } catch (IOException e) {

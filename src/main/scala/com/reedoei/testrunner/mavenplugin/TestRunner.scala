@@ -4,7 +4,7 @@ import java.nio.file.{Files, Paths}
 import java.util.Properties
 
 import com.reedoei.testrunner.data.results.TestRunResult
-import com.reedoei.testrunner.runner.RunnerProvider
+import com.reedoei.testrunner.runner.RunnerFactory
 import com.reedoei.testrunner.testobjects.TestLocator
 import com.reedoei.testrunner.util.Utility
 import org.apache.maven.project.MavenProject
@@ -38,7 +38,7 @@ class TestRunner extends TestPlugin {
             .toString
 
     override def execute(properties: Properties, project: MavenProject): Unit =
-        RunnerProvider.from(project)
+        RunnerFactory.from(project)
             .flatMap(_.run(tests(properties.getProperty("testrunner.source"), project)))
             .getOrElse(TestRunResult.empty())
             .writeTo(properties.getProperty("testrunner.output", defaultOutputLocation(project)))

@@ -1,6 +1,6 @@
-package illinois.diaper;
+package edu.illinois.diaper;
 
-import illinois.diaper.agent.MainAgent;
+import edu.illinois.diaper.agent.MainAgent;
 
 import java.io.BufferedReader;
 import java.io.File;

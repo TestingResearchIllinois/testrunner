@@ -1,4 +1,4 @@
-package illinois.diaper.agent;
+package edu.illinois.diaper.agent;
 
 import java.lang.instrument.Instrumentation;
 

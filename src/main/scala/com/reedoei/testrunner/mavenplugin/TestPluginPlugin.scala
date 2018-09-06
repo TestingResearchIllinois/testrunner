@@ -16,6 +16,8 @@ import org.apache.maven.project.MavenProject
 @Mojo(name = "testplugin",
       defaultPhase = LifecyclePhase.TEST,
       requiresDependencyResolution = ResolutionScope.TEST)
+@Execute(phase = LifecyclePhase.TEST_COMPILE,
+         goal = "test-compile")
 class TestPluginPlugin extends AbstractMojo {
     @Parameter(defaultValue = "${project}", readonly = true, required = true)
     private var project: MavenProject = _

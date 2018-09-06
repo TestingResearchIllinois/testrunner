@@ -1,4 +1,4 @@
-package illinois.diaper;
+package edu.illinois.diaper;
 
 import java.io.BufferedReader;
 import java.io.File;

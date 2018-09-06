@@ -1,4 +1,4 @@
-package illinois.cs.dt.tools.diagnosis;
+package edu.illinois.cs.dt.tools.diagnosis;
 
 import java.util.HashMap;
 import java.util.Map;

@@ -1,7 +1,7 @@
 package com.reedoei.testrunner.data.results;
 
 import com.google.gson.Gson;
-import illinois.cs.dt.tools.diagnosis.DiffContainer;
+import edu.illinois.cs.dt.tools.diagnosis.DiffContainer;
 
 import java.io.File;
 import java.io.FileOutputStream;
