@@ -15,6 +15,33 @@
         <scala.version>2.12.6</scala.version>
     </properties>
 
+    <developers>
+        <developer>
+            <name>Reed Oei</name>
+            <email>me@reedoei.com</email>
+        </developer>
+    </developers>
+
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>http://www.opensource.org/licenses/mit-license.php</url>
+        </license>
+    </licenses>
+
+    <scm>
+        <connection>scm:git:https://github.com/ReedOei/testrunner-maven-plugin.git</connection>
+        <developerConnection>scm:git:https://github.com/ReedOei/testrunner-maven-plugin.git</developerConnection>
+        <url>https://github.com/ReedOei/testrunner-maven-plugin.git</url>
+    </scm>
+
+    <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+    </distributionManagement>
+
     <!--
       <repositories>
         <repository>
@@ -114,6 +141,18 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-plugin-plugin</artifactId>
                 <version>3.5.2</version>
+            </plugin>
+
+            <plugin>
+                <groupId>org.sonatype.plugins</groupId>
+                <artifactId>nexus-staging-maven-plugin</artifactId>
+                <version>1.6.7</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <serverId>ossrh</serverId>
+                    <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                    <autoReleaseAfterClose>false</autoReleaseAfterClose>
+                </configuration>
             </plugin>
 
             <plugin>

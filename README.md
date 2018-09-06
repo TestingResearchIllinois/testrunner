@@ -35,6 +35,12 @@ Then, add the following plugin to the `pom.xml` of the Maven project you wish to
 </plugin>
 ```
 
+Then run:
+
+```
+mvn testrunner:testplugin
+```
+
 # Installation
 
 If you want the latest version of this plugin (or for some reason you can't get if off Maven central), you can run:
