@@ -128,7 +128,7 @@ The two following runners are available:
 - SmartRunner: The SmartRunner will run tests in a given order, but will also automatically timeout tests using knowledge from prior runs, detect flaky tests, and do some basic sanity checking of results.
 
 Runners will all return an `Option[TestRunResult]`, where `TestRunResult` contains the following methods for accessing data:
-```
+```java
 public java.util.List<java.lang.String> testOrder();
 public java.util.Map<java.lang.String,TestResult> results();
 public java.util.Map<java.lang.String,DiffContainer> diffs(); // This will be empty if the capture_state property (above) is not set to true.
