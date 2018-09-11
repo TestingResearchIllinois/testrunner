@@ -10,6 +10,7 @@
     <modules>
         <module>testrunner-maven-plugin</module>
         <module>testrunner-running</module>
+        <module>testrunner-testing</module>
     </modules>
 
     <packaging>pom</packaging>
