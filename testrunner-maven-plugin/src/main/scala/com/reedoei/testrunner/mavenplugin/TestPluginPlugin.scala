@@ -1,11 +1,9 @@
 package com.reedoei.testrunner.mavenplugin
 
-import java.io.FileInputStream
 import java.nio.file.Paths
 import java.util.Properties
 
 import com.reedoei.testrunner.configuration.Configuration
-import com.reedoei.testrunner.util.{MavenClassLoader, autoClose}
 import org.apache.maven.plugin.AbstractMojo
 import org.apache.maven.plugins.annotations._
 import org.apache.maven.project.MavenProject
@@ -22,7 +20,7 @@ class TestPluginPlugin extends AbstractMojo {
     @Parameter(defaultValue = "${project}", readonly = true, required = true)
     private var project: MavenProject = _
 
-    @Parameter(property = "testplugin.classname", defaultValue = "TestRunner")
+    @Parameter(property = "testplugin.classname", defaultValue = "com.reedoei.testrunner.mavenplugin.TestRunner")
     private var className = "TestPluginPlugin"
 
     @Parameter(property = "testplugin.properties", defaultValue = "")

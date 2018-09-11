@@ -69,6 +69,13 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <plugin>
+                <groupId>com.reedoei</groupId>
+                <artifactId>testrunner-maven-plugin</artifactId>
+                <version>0.1-SNAPSHOT</version>
+            </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
