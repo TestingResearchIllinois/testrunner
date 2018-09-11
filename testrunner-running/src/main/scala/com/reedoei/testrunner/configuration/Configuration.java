@@ -8,8 +8,8 @@ import java.nio.file.Paths;
 import java.util.Properties;
 
 public class Configuration {
-    public static void reloadConfig(final Path path) throws IOException {
-        config = new Configuration(path);
+    public static Configuration reloadConfig(final Path path) throws IOException {
+        return config = new Configuration(path);
     }
 
     private static Configuration config = new Configuration(Paths.get("testplugin.properties"));
@@ -27,6 +27,10 @@ public class Configuration {
 
     public Configuration loadProperties() throws IOException {
         return loadProperties(configPath);
+    }
+
+    public Properties properties() {
+        return properties;
     }
 
     public Path configPath() {

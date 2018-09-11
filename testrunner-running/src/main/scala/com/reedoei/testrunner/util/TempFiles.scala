@@ -1,7 +1,8 @@
 package com.reedoei.testrunner.util
 
-import java.io.File
+import java.io.{File, FileOutputStream}
 import java.nio.file.{Files, Path, StandardOpenOption}
+import java.util.Properties
 
 import scala.util.Try
 
@@ -29,5 +30,12 @@ object TempFiles {
 
             f(path)
         })
+    }
+
+    def withProperties[B](properties: Properties)(f: Path => B): Option[B] = {
+        withTempFile(path => autoClose(new FileOutputStream(path.toFile))(os => {
+            properties.store(os, "")
+            f(path)
+        }).toOption).flatten
     }
 }

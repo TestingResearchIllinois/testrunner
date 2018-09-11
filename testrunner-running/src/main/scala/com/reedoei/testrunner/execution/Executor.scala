@@ -9,6 +9,8 @@ import com.reedoei.testrunner.configuration.Configuration
 
 import scala.util.Try
 
+class Executor
+
 object Executor {
     def main(args: Array[String]): Unit = {
         System.exit(args match {

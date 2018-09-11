@@ -21,7 +21,9 @@ trait Runner {
         run(testOrder.asScala.toStream)
 
     def run(testOrder: Stream[String]): Option[TestRunResult] =
-        TempFiles.withSeq(testOrder)(path => TempFiles.withTempFile(outputPath => {
+        TempFiles.withSeq(testOrder)(path =>
+        TempFiles.withTempFile(outputPath =>
+        TempFiles.withProperties(Configuration.config().properties())(propertiesPath => {
             val cp = new MavenClassLoader(project()).classpath()
 
 
@@ -30,13 +32,13 @@ trait Runner {
             var pluginClassloader = Thread.currentThread().getContextClassLoader.asInstanceOf[URLClassLoader]
             var pluginCp = String.join(File.pathSeparator, pluginClassloader.getURLs.map(_.toString).toList.asJava)
 
-            val builder = new ExecutionInfoBuilder(Executor.getClass).classpath(pluginCp)
+            val builder = new ExecutionInfoBuilder(classOf[Executor]).classpath(pluginCp)
 
             val exitCode =
                 execution(testOrder, builder).run(
                     framework().toString,
                     path.toAbsolutePath.toString,
-                    Configuration.config().configPath().toAbsolutePath.toString,
+                    propertiesPath.toAbsolutePath.toString,
                     cp,
                     outputPath.toAbsolutePath.toString).exitValue()
 
@@ -46,7 +48,7 @@ trait Runner {
             } else {
                 Failure(new Exception("Non-zero exit code: " ++ exitCode.toString))
             }
-        }).flatMap(_.flatten.toOption)).flatten
+        }))).flatten.flatten.flatMap(_.flatten.toOption)
 
     def framework(): TestFramework
     def project(): MavenProject
