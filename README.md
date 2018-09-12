@@ -49,26 +49,3 @@ You can generate documentation using:
 ```
 mvn javadoc:javadoc scala:doc
 ```
-
-# Example Usage
-
-For example, if my class looks like this:
-```scala
-package com.my.package
-
-class MyClass extends TestPlugin {
-    def execute(properties: Properties, project: MavenProject): Unit = ???
-}
-```
-
-Then my plugin declaration would be:
-```xml
-<plugin>
-	<groupId>com.reedoei</groupId>
-	<artifactId>testrunner-maven-plugin</artifactId>
-	<version>1.0-SNAPSHOT</version>
-	<configuration>
-		<className>com.my.package.MyClass</className>
-	</configuration>
-</plugin>
-```
