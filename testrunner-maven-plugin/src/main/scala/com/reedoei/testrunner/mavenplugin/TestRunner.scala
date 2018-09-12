@@ -1,8 +1,8 @@
 package com.reedoei.testrunner.mavenplugin
 
 import java.nio.file.{Files, Paths}
-import java.util.Properties
 
+import com.reedoei.testrunner.configuration.Configuration
 import com.reedoei.testrunner.data.results.TestRunResult
 import com.reedoei.testrunner.runner.RunnerFactory
 import com.reedoei.testrunner.testobjects.TestLocator
@@ -37,9 +37,9 @@ class TestRunner extends TestPlugin {
             .toAbsolutePath
             .toString
 
-    override def execute(properties: Properties, project: MavenProject): Unit =
+    override def execute(project: MavenProject): Unit =
         RunnerFactory.from(project)
-            .flatMap(_.run(tests(properties.getProperty("testrunner.source"), project)))
+            .flatMap(_.run(tests(Configuration.config().getProperty("testrunner.source", null), project)))
             .getOrElse(TestRunResult.empty())
-            .writeTo(properties.getProperty("testrunner.output", defaultOutputLocation(project)))
+            .writeTo(Configuration.config().getProperty("testrunner.output", defaultOutputLocation(project)))
 }

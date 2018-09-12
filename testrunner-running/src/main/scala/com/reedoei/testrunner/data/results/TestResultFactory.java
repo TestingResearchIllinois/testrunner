@@ -25,7 +25,7 @@ public class TestResultFactory {
         //check whether it is a failure or an error
         final Result result;
         if(isAssertFailure(throwable)) {
-            result = Result.FAIL;
+            result = Result.FAILURE;
         } else {
             result = Result.ERROR;
         }

@@ -20,35 +20,39 @@ trait Runner {
     def runList(testOrder: java.util.List[String]): Option[TestRunResult] =
         run(testOrder.asScala.toStream)
 
-    def run(testOrder: Stream[String]): Option[TestRunResult] =
+    def runListWithCp(cp: String, testOrder: java.util.List[String]): Option[TestRunResult] =
+        runWithCp(cp, testOrder.asScala.toStream)
+
+    def run(testOrder: Stream[String]): Option[TestRunResult] = runWithCp(classpath(), testOrder)
+
+    def runWithCp(cp: String, testOrder: Stream[String]): Option[TestRunResult] =
         TempFiles.withSeq(testOrder)(path =>
-        TempFiles.withTempFile(outputPath =>
-        TempFiles.withProperties(Configuration.config().properties())(propertiesPath => {
-            val cp = new MavenClassLoader(project()).classpath()
+            TempFiles.withTempFile(outputPath =>
+                TempFiles.withProperties(Configuration.config().properties())(propertiesPath => {
+                    // TODO: When upgrading past Java 8, this will probably no longer work
+                    // (cannot cast any ClassLoader to URLClassLoader)
+                    var pluginClassloader = Thread.currentThread().getContextClassLoader.asInstanceOf[URLClassLoader]
+                    var pluginCp = String.join(File.pathSeparator, pluginClassloader.getURLs.map(_.toString).toList.asJava)
 
+                    val builder = new ExecutionInfoBuilder(classOf[Executor]).classpath(pluginCp)
 
-            // TODO: When upgrading past Java 8, this will probably no longer work
-            // (cannot cast any ClassLoader to URLClassLoader)
-            var pluginClassloader = Thread.currentThread().getContextClassLoader.asInstanceOf[URLClassLoader]
-            var pluginCp = String.join(File.pathSeparator, pluginClassloader.getURLs.map(_.toString).toList.asJava)
+                    val exitCode =
+                        execution(testOrder, builder).run(
+                            framework().toString,
+                            path.toAbsolutePath.toString,
+                            propertiesPath.toAbsolutePath.toString,
+                            cp,
+                            outputPath.toAbsolutePath.toString).exitValue()
 
-            val builder = new ExecutionInfoBuilder(classOf[Executor]).classpath(pluginCp)
+                    if (exitCode == 0) {
+                        autoClose(Source.fromFile(outputPath.toAbsolutePath.toString).bufferedReader())(reader =>
+                            Try(new Gson().fromJson(reader, classOf[TestRunResult])))
+                    } else {
+                        Failure(new Exception("Non-zero exit code: " ++ exitCode.toString))
+                    }
+                }))).flatten.flatten.flatMap(_.flatten.toOption)
 
-            val exitCode =
-                execution(testOrder, builder).run(
-                    framework().toString,
-                    path.toAbsolutePath.toString,
-                    propertiesPath.toAbsolutePath.toString,
-                    cp,
-                    outputPath.toAbsolutePath.toString).exitValue()
-
-            if (exitCode == 0) {
-                autoClose(Source.fromFile(outputPath.toAbsolutePath.toString).bufferedReader())(reader =>
-                    Try(new Gson().fromJson(reader, classOf[TestRunResult])))
-            } else {
-                Failure(new Exception("Non-zero exit code: " ++ exitCode.toString))
-            }
-        }))).flatten.flatten.flatMap(_.flatten.toOption)
+    def classpath(): String = new MavenClassLoader(project()).classpath()
 
     def framework(): TestFramework
     def project(): MavenProject

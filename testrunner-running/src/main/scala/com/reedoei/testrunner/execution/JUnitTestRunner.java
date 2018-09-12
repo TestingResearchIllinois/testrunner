@@ -92,6 +92,7 @@ public class JUnitTestRunner extends BlockJUnit4ClassRunner {
         for (final JUnitTest test : tests) {
             try {
 //                System.out.println("Test being executed: " + fullName(test.description()));
+                System.setProperty("testrunner.current_test", fullName(test.description()));
                 runChild(test, notifier);
             } catch (AssumptionViolatedException e) {
                 testNotifier.fireTestIgnored();

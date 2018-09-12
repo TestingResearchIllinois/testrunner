@@ -40,6 +40,8 @@ class SmartRunner(mavenProject: MavenProject, testFramework: TestFramework, info
         executionInfoBuilder.timeout(timeoutFor(testOrder), TimeUnit.SECONDS).build()
 
     def timeoutFor(testOrder: Stream[String]): Long = infoStore.getTimeout(testOrder.toList.asJava)
+
+    def info(): TestInfoStore = infoStore
 }
 
 object SmartRunner extends RunnerFactory[SmartRunner] {

@@ -4,9 +4,12 @@ import java.nio.file.Paths
 import java.util.Properties
 
 import com.reedoei.testrunner.configuration.Configuration
+import org.apache.maven.execution.MavenSession
 import org.apache.maven.plugin.AbstractMojo
 import org.apache.maven.plugins.annotations._
-import org.apache.maven.project.MavenProject
+import org.apache.maven.project.{DefaultProjectBuildingRequest, MavenProject, ProjectBuilder}
+
+import scala.collection.JavaConverters._
 
 /**
  * @author Reed Oei
@@ -19,6 +22,12 @@ import org.apache.maven.project.MavenProject
 class TestPluginPlugin extends AbstractMojo {
     @Parameter(defaultValue = "${project}", readonly = true, required = true)
     private var project: MavenProject = _
+
+    @Parameter(defaultValue = "${session}", readonly = true, required = true)
+    private var session: MavenSession = _
+
+    @Component
+    private var projectBuilder: ProjectBuilder = _
 
     @Parameter(property = "testplugin.classname", defaultValue = "com.reedoei.testrunner.mavenplugin.TestRunner")
     private var className = "TestPluginPlugin"
@@ -45,7 +54,6 @@ class TestPluginPlugin extends AbstractMojo {
         }
 
         val obj = clz.getConstructor().newInstance()
-        clz.getMethod("execute", classOf[Properties], classOf[MavenProject])
-           .invoke(obj, Configuration.config().properties(), project)
+        clz.getMethod("execute", classOf[MavenProject]).invoke(obj, project)
     }
 }
