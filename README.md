@@ -6,19 +6,13 @@ If you want the latest version of this plugin (or for some reason you can't get 
 
 # Quickstart
 
-First, create a class that implements the following trait/interface:
+First, create a class that extends the following abstract class:
 
-Java:
 ```java
-public interface TestPlugin {
-    void execute(final Properties properties, final MavenProject project);
-}
-```
+public abstract class TestPlugin {
+    public TestPlugin() {}
 
-Scala:
-```scala
-trait TestPlugin {
-    def execute(properties: Properties, project: MavenProject): Unit
+    public abstract void execute(final MavenProject project);
 }
 ```
 
