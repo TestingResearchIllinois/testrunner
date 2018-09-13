@@ -27,6 +27,8 @@ object Executor {
 
         val loader = new URLClassLoader(classpath.split(File.pathSeparator).map(new File(_).toURI.toURL))
 
+        // TODO: need to change the threadcontext classloader and system classloader
+
         val result = Try(testFramework match {
             case "JUnit" =>
                 JUnitTestExecutor.runOrder(loader, tests, true, false)

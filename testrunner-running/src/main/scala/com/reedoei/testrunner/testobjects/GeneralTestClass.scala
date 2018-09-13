@@ -1,6 +1,7 @@
 package com.reedoei.testrunner.testobjects
 
 import java.lang.annotation.Annotation
+import java.lang.reflect.Modifier
 
 import scala.util.Try
 
@@ -17,13 +18,17 @@ object GeneralTestClass {
 
         val clz = loader.loadClass(clzName)
 
-        val methods = clz.getMethods.toStream
+        if (!Modifier.isAbstract(clz.getModifiers)) {
+            val methods = clz.getMethods.toStream
 
-        Try(if (methods.exists(_.getAnnotation(testAnnotation) != null)) {
+            Try(if (methods.exists(_.getAnnotation(testAnnotation) != null)) {
                 Option(new JUnitTestClass(loader, clz))
             } else {
                 Option.empty
             }).toOption.flatten
+        } else {
+            Option.empty
+        }
     }
 }
 

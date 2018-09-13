@@ -20,5 +20,5 @@ object TestLocator {
         testClasses(project).flatMap(className =>
             GeneralTestClass
                 .create(new MavenClassLoader(project).loader, className)
-                .map(c => c.tests()).getOrElse(Stream.empty))
+                .map(_.tests()).getOrElse(Stream.empty))
 }

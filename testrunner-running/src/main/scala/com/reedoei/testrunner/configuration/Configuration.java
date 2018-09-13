@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Optional;
 import java.util.Properties;
 
 public class Configuration {
@@ -12,7 +13,9 @@ public class Configuration {
         return config = new Configuration(path);
     }
 
-    private static Configuration config = new Configuration(Paths.get("testplugin.properties"));
+    private static final Path CONFIG_PATH = Paths.get("testplugin.properties");
+
+    private static Configuration config = new Configuration(CONFIG_PATH);
 
     public static Configuration config() {
         return config;
@@ -37,6 +40,12 @@ public class Configuration {
         return configPath;
     }
 
+    public void setDefault(final String property, final String value) {
+        if (properties().getProperty(property) == null) {
+            properties().setProperty(property, value);
+        }
+    }
+
     private Configuration loadProperties(final Path path) throws IOException {
         try (final InputStream fileStream = new FileInputStream(path.toFile())) {
             properties.load(fileStream);
@@ -46,15 +55,20 @@ public class Configuration {
     }
 
     public String getProperty(final String s, final String def) {
-        if (properties.getProperty(s) == null) {
+        if (properties().getProperty(s) == null) {
             try {
                 loadProperties();
             } catch (IOException e) {
-                properties.setProperty(s, def);
+                properties().setProperty(s, def);
             }
         }
 
-        return properties.getProperty(s, def);
+        return properties().getProperty(s, def);
+    }
+
+    public String getProperty(final String s) {
+        return Optional.ofNullable(properties().getProperty(s))
+                .orElseThrow(() -> new IllegalArgumentException("Property " + s + " does not exit!"));
     }
 
     public double getDoubleProperty(final String s) {

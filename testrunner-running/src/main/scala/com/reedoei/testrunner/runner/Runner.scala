@@ -1,20 +1,19 @@
 package com.reedoei.testrunner.runner
 
 import java.io.File
-import java.net.URLClassLoader
+import java.nio.file.Paths
 
 import com.google.gson.Gson
-import com.reedoei.testrunner.configuration.Configuration
+import com.reedoei.testrunner.configuration.{ConfigProps, Configuration}
 import com.reedoei.testrunner.data.framework.TestFramework
 import com.reedoei.testrunner.data.results.TestRunResult
 import com.reedoei.testrunner.execution.Executor
 import com.reedoei.testrunner.util._
 import org.apache.maven.project.MavenProject
 
+import scala.collection.JavaConverters._
 import scala.io.Source
 import scala.util.{Failure, Try}
-
-import scala.collection.JavaConverters._
 
 trait Runner {
     def runList(testOrder: java.util.List[String]): Option[TestRunResult] =
@@ -25,16 +24,21 @@ trait Runner {
 
     def run(testOrder: Stream[String]): Option[TestRunResult] = runWithCp(classpath(), testOrder)
 
-    def runWithCp(cp: String, testOrder: Stream[String]): Option[TestRunResult] =
+    def makeBuilder(cp: String): ExecutionInfoBuilder = {
+        val builder = new ExecutionInfoBuilder(classOf[Executor]).classpath(cp)
+
+        if (Configuration.config().getProperty(ConfigProps.CAPTURE_STATE, false)) {
+            builder.javaAgent(Paths.get(Configuration.config().getProperty("testplugin.javaagent")))
+        } else {
+            builder
+        }
+    }
+
+    def runWithCp(cp: String, testOrder: Stream[String]): Option[TestRunResult] = {
         TempFiles.withSeq(testOrder)(path =>
             TempFiles.withTempFile(outputPath =>
                 TempFiles.withProperties(Configuration.config().properties())(propertiesPath => {
-                    // TODO: When upgrading past Java 8, this will probably no longer work
-                    // (cannot cast any ClassLoader to URLClassLoader)
-                    var pluginClassloader = Thread.currentThread().getContextClassLoader.asInstanceOf[URLClassLoader]
-                    var pluginCp = String.join(File.pathSeparator, pluginClassloader.getURLs.map(_.toString).toList.asJava)
-
-                    val builder = new ExecutionInfoBuilder(classOf[Executor]).classpath(pluginCp)
+                    val builder = makeBuilder(cp + File.pathSeparator + Configuration.config().getProperty("testplugin.classpath"))
 
                     val exitCode =
                         execution(testOrder, builder).run(
@@ -51,6 +55,7 @@ trait Runner {
                         Failure(new Exception("Non-zero exit code: " ++ exitCode.toString))
                     }
                 }))).flatten.flatten.flatMap(_.flatten.toOption)
+    }
 
     def classpath(): String = new MavenClassLoader(project()).classpath()
 

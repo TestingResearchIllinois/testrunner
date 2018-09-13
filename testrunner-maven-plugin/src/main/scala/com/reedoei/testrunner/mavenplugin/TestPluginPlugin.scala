@@ -1,13 +1,14 @@
 package com.reedoei.testrunner.mavenplugin
 
+import java.io.File
+import java.net.{URL, URLClassLoader}
 import java.nio.file.Paths
-import java.util.Properties
 
-import com.reedoei.testrunner.configuration.Configuration
+import com.reedoei.testrunner.configuration.{ConfigProps, Configuration}
 import org.apache.maven.execution.MavenSession
 import org.apache.maven.plugin.AbstractMojo
 import org.apache.maven.plugins.annotations._
-import org.apache.maven.project.{DefaultProjectBuildingRequest, MavenProject, ProjectBuilder}
+import org.apache.maven.project.{MavenProject, ProjectBuilder}
 
 import scala.collection.JavaConverters._
 
@@ -35,16 +36,19 @@ class TestPluginPlugin extends AbstractMojo {
     @Parameter(property = "testplugin.properties", defaultValue = "")
     private var propertiesPath = ""
 
-    // TODO: Pass maven properties set by users
-
     def setDefaults(configuration: Configuration): Unit = {
-        configuration.properties().setProperty("testplugin.runner.capture_state", false.toString)
-        configuration.properties().setProperty("testplugin.runner.timeout.universal", (-1).toString)
-        configuration.properties().setProperty("testplugin.runner.smart.timeout.default", (6*3600).toString)
-        configuration.properties().setProperty("testplugin.runner.smart.timeout.multiplier", 4.toString)
-        configuration.properties().setProperty("testplugin.runner.smart.timeout.offset", 5.toString)
-        configuration.properties().setProperty("testplugin.runner.smart.timeout.pertest", 2.toString)
+        configuration.setDefault(ConfigProps.CAPTURE_STATE, false.toString)
+        configuration.setDefault(ConfigProps.UNIVERSAL_TIMEOUT, (-1).toString)
+        configuration.setDefault(ConfigProps.SMARTRUNNER_DEFAULT_TIMEOUT, (6*3600).toString)
+        configuration.setDefault("testplugin.runner.smart.timeout.multiplier", 4.toString)
+        configuration.setDefault("testplugin.runner.smart.timeout.offset", 5.toString)
+        configuration.setDefault("testplugin.runner.smart.timeout.pertest", 2.toString)
     }
+
+    def configJavaAgentPath(): Unit =
+        TestPluginPlugin.pluginClasspathUrls()
+            .find(_.toString.contains("testrunner-maven-plugin"))
+            .foreach(url => Configuration.config().setDefault("testplugin.javaagent", url.toString))
 
     override def execute(): Unit = {
         val clz = Class.forName(className)
@@ -53,7 +57,39 @@ class TestPluginPlugin extends AbstractMojo {
             setDefaults(Configuration.reloadConfig(Paths.get(propertiesPath)))
         }
 
+        Configuration.config().setDefault("testplugin.classpath", TestPluginPlugin.pluginClasspath())
+        configJavaAgentPath()
+
         val obj = clz.getConstructor().newInstance()
         clz.getMethod("execute", classOf[MavenProject]).invoke(obj, project)
+    }
+}
+
+object TestPluginPlugin {
+    private var pluginCpURLs: Array[URL] = null
+    private var pluginCp: String = null
+
+    def generate(): Unit = {
+        // TODO: When upgrading past Java 8, this will probably no longer work
+        // (cannot cast any ClassLoader to URLClassLoader)
+        var pluginClassloader = Thread.currentThread().getContextClassLoader.asInstanceOf[URLClassLoader]
+        pluginCpURLs = pluginClassloader.getURLs
+        pluginCp = String.join(File.pathSeparator, pluginCpURLs.map(_.getPath).toList.asJava)
+    }
+
+    def pluginClasspathUrls(): Array[URL] = {
+        if (pluginCpURLs == null) {
+            generate()
+        }
+
+        pluginCpURLs
+    }
+
+    def pluginClasspath(): String = {
+        if (pluginCp == null) {
+            generate()
+        }
+
+        pluginCp
     }
 }
