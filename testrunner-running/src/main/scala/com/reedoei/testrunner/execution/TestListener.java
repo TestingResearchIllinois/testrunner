@@ -40,12 +40,12 @@ public class TestListener extends RunListener {
 
     @Override
     public void testFailure(Failure failure) throws Exception {
-        failure.getException().printStackTrace();
+//        failure.getException().printStackTrace();
     }
 
     @Override
     public void testAssumptionFailure(Failure failure) {
-        failure.getException().printStackTrace();
+//        failure.getException().printStackTrace();
     }
 
     @Override

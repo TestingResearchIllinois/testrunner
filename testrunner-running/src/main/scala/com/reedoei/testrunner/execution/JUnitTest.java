@@ -19,20 +19,20 @@ public class JUnitTest {
     private final int i;
     private final String junitMethod;
 
-    public JUnitTest(final ClassLoader loader, final String fullMethodName, final int i) throws ClassNotFoundException {
+    public JUnitTest(final String fullMethodName, final int i) throws ClassNotFoundException {
         this.fullMethodName = fullMethodName;
 
         final String className = fullMethodName.substring(0, this.fullMethodName.lastIndexOf("."));
-        this.clz = new TestClass(loader.loadClass(className));
+        this.clz = new TestClass(Class.forName(className));
 
         this.junitMethod = fullMethodName.substring(this.fullMethodName.lastIndexOf(".") + 1);
 
         this.i = i;
     }
 
-    public JUnitTest(final ClassLoader loader, final String className, final String junitMethod) {
+    public JUnitTest(final String className, final String junitMethod) {
         try {
-            this.clz = new TestClass(loader.loadClass(className));
+            this.clz = new TestClass(Class.forName(className));
             this.fullMethodName = this.clz.getJavaClass().getCanonicalName() + "." + junitMethod;
             this.junitMethod = junitMethod;
         } catch (Throwable e) {

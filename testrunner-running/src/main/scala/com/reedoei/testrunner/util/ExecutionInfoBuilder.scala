@@ -9,6 +9,8 @@ class ExecutionInfoBuilder(clz: Class[_]) {
     private var javaOpts: List[String] = List()
     private var timeout: Long = -1
     private var timeoutUnit: TimeUnit = TimeUnit.SECONDS
+    private var properties: List[(String, String)] = List()
+    private var inheritIO: Boolean = true
 
     def timeout(timeout: Long, timeoutUnit: TimeUnit): ExecutionInfoBuilder = {
         this.timeout = timeout
@@ -36,11 +38,23 @@ class ExecutionInfoBuilder(clz: Class[_]) {
         this
     }
 
+    def addProperty(property: (String, String)): ExecutionInfoBuilder = {
+        properties = property :: properties
+        this
+    }
+
+    def addProperty(key: String, value: String): ExecutionInfoBuilder = addProperty((key, value))
+
     def javaOpt(opt: String): ExecutionInfoBuilder = {
         javaOpts = opt :: javaOpts
         this
     }
 
+    def inheritIO(inheritIO: Boolean): ExecutionInfoBuilder = {
+        this.inheritIO = inheritIO
+        this
+    }
+
     def build(): ExecutionInfo =
-        ExecutionInfo(classpath, javaAgent, javaOpts, clz, timeout, timeoutUnit)
+        ExecutionInfo(classpath, javaAgent, javaOpts, properties, clz, inheritIO, timeout, timeoutUnit)
 }

@@ -29,16 +29,15 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class JUnitTestExecutor {
-    public static TestRunResult runOrder(final ClassLoader loader,
-                                         final List<String> testList,
+    public static TestRunResult runOrder(final List<String> testList,
                                          final boolean skipMissing,
                                          final boolean runSeparately)
             throws ClassNotFoundException{
         final JUnitTestExecutor executor;
         if (skipMissing) {
-            executor = JUnitTestExecutor.skipMissing(loader, testList);
+            executor = JUnitTestExecutor.skipMissing(testList);
         } else {
-            executor = JUnitTestExecutor.testOrder(loader, testList);
+            executor = JUnitTestExecutor.testOrder(testList);
         }
 
         if (runSeparately) {
@@ -75,18 +74,18 @@ public class JUnitTestExecutor {
     }
 
     //package.class.method
-    public static JUnitTestExecutor singleton(final ClassLoader loader, final String fullMethodName) throws ClassNotFoundException {
-        return JUnitTestExecutor.testOrder(loader, Collections.singletonList(fullMethodName));
+    public static JUnitTestExecutor singleton(final String fullMethodName) throws ClassNotFoundException {
+        return JUnitTestExecutor.testOrder(Collections.singletonList(fullMethodName));
     }
 
-    public static JUnitTestExecutor skipMissing(final ClassLoader loader, final List<String> testOrder) {
+    public static JUnitTestExecutor skipMissing(final List<String> testOrder) {
         final List<JUnitTest> tests = new ArrayList<>();
         final Set<TestResult> knownResults = new HashSet<>();
 
         for (int i = 0; i < testOrder.size(); i++) {
             final String fullMethodName = testOrder.get(i);
             try {
-                final JUnitTest test = new JUnitTest(loader, fullMethodName, i);
+                final JUnitTest test = new JUnitTest(fullMethodName, i);
 
                 tests.add(test);
             } catch (ClassNotFoundException e) {
@@ -104,14 +103,14 @@ public class JUnitTestExecutor {
         return new JUnitTestExecutor(tests, knownResults);
     }
 
-    public static JUnitTestExecutor testOrder(final ClassLoader loader, final List<String> testOrder) throws ClassNotFoundException {
+    public static JUnitTestExecutor testOrder(final List<String> testOrder) throws ClassNotFoundException {
         final List<JUnitTest> tests = new ArrayList<>();
 
         for (int i = 0; i < testOrder.size(); i++) {
             final String fullMethodName = testOrder.get(i);
 
             try {
-                tests.add(new JUnitTest(loader, fullMethodName, i));
+                tests.add(new JUnitTest(fullMethodName, i));
             } catch (Throwable e) {
                 System.out.println("[ERROR] Encountered exception while initializing JUnitTest for '" + fullMethodName + "'");
                 throw e;

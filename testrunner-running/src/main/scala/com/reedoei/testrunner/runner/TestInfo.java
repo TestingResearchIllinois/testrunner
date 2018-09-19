@@ -52,7 +52,7 @@ public class TestInfo {
             if (knownRuns.containsKey(testsBefore) && !knownRuns.get(testsBefore).equals(testResult)) {
                 this.isFlaky = true;
 
-                throw new FlakyTestException(testName, knownRuns.get(testsBefore), testResult, testsBefore);
+//                throw new FlakyTestException(testName, knownRuns.get(testsBefore), testResult, testsBefore);
             } else {
                 knownRuns.put(testsBefore, testResult);
             }

@@ -24,6 +24,7 @@ import org.junit.runner.Description;
 import org.junit.runner.Runner;
 import org.junit.runner.manipulation.Filter;
 import org.junit.runner.manipulation.NoTestsRemainException;
+import org.junit.runner.notification.RunListener;
 import org.junit.runner.notification.RunNotifier;
 import org.junit.runner.notification.StoppedByUserException;
 import org.junit.runners.BlockJUnit4ClassRunner;
@@ -87,7 +88,18 @@ public class JUnitTestRunner extends BlockJUnit4ClassRunner {
     @Override
     public void run(RunNotifier notifier) {
         this.notifier = notifier;
-        EachTestNotifier testNotifier = new EachTestNotifier(notifier, this.getDescription());
+
+        final String testListenerClassName = Configuration.config().getProperty("testrunner.testlistener_class", "");
+
+        if (!"".equals(testListenerClassName)) {
+            try {
+                final Class<?> clz = Class.forName(testListenerClassName);
+                final Object o = clz.newInstance();
+                notifier.addListener((RunListener) o);
+            } catch (ClassNotFoundException | IllegalAccessException | InstantiationException ignored) {}
+        }
+
+        final EachTestNotifier testNotifier = new EachTestNotifier(notifier, this.getDescription());
 
         for (final JUnitTest test : tests) {
             try {

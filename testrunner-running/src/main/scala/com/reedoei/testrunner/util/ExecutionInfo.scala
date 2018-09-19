@@ -5,7 +5,9 @@ import java.util.Objects
 import java.util.concurrent.TimeUnit
 
 case class ExecutionInfo(classpath: String, javaAgent: Option[Path],
-                         javaOpts: List[String], clz: Class[_],
+                         javaOpts: List[String],
+                         properties: List[(String, String)],
+                         clz: Class[_], inheritIO: Boolean,
                          timeout: Long, timeoutUnit: TimeUnit) {
     /**
       * This is an ugly workaround for Scala objects, whose class names end with $ despite the static main method
@@ -26,14 +28,20 @@ case class ExecutionInfo(classpath: String, javaAgent: Option[Path],
         List("java", "-cp", classpath) ++
         javaAgent.map(p => List("-javaagent:" ++ p.toAbsolutePath.toString)).getOrElse(List.empty) ++
         javaOpts ++
+        properties.map(p => "-D" ++ p._1 ++ "=" ++ p._2) ++
         List(Objects.requireNonNull(className)) ++
         args.toList
 
-    def run(argVals: String*): Process = {
-        val process =
+    def processBuilder(argVals: String*): ProcessBuilder = {
+        if (inheritIO) {
+            new ProcessBuilder(args(argVals:_*): _*).inheritIO()
+        } else {
             new ProcessBuilder(args(argVals:_*): _*)
-                .inheritIO()
-                .start()
+        }
+    }
+
+    def run(argVals: String*): Process = {
+        val process = processBuilder(argVals:_*).start()
 
         if (timeout > 0) {
             process.waitFor(timeout, timeoutUnit)

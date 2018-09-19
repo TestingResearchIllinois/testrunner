@@ -34,28 +34,26 @@ trait Runner {
         }
     }
 
-    def runWithCp(cp: String, testOrder: Stream[String]): Option[TestRunResult] = {
+    def runWithCp(cp: String, testOrder: Stream[String]): Option[TestRunResult] =
         TempFiles.withSeq(testOrder)(path =>
-            TempFiles.withTempFile(outputPath =>
-                TempFiles.withProperties(Configuration.config().properties())(propertiesPath => {
-                    val builder = makeBuilder(cp + File.pathSeparator + Configuration.config().getProperty("testplugin.classpath"))
+        TempFiles.withTempFile(outputPath =>
+        TempFiles.withProperties(Configuration.config().properties())(propertiesPath => {
+            val builder = makeBuilder(cp + File.pathSeparator + Configuration.config().getProperty("testplugin.classpath"))
 
-                    val exitCode =
-                        execution(testOrder, builder).run(
-                            framework().toString,
-                            path.toAbsolutePath.toString,
-                            propertiesPath.toAbsolutePath.toString,
-                            cp,
-                            outputPath.toAbsolutePath.toString).exitValue()
+            val exitCode =
+                execution(testOrder, builder).run(
+                    framework().toString,
+                    path.toAbsolutePath.toString,
+                    propertiesPath.toAbsolutePath.toString,
+                    outputPath.toAbsolutePath.toString).exitValue()
 
-                    if (exitCode == 0) {
-                        autoClose(Source.fromFile(outputPath.toAbsolutePath.toString).bufferedReader())(reader =>
-                            Try(new Gson().fromJson(reader, classOf[TestRunResult])))
-                    } else {
-                        Failure(new Exception("Non-zero exit code: " ++ exitCode.toString))
-                    }
-                }))).flatten.flatten.flatMap(_.flatten.toOption)
-    }
+            if (exitCode == 0) {
+                autoClose(Source.fromFile(outputPath.toAbsolutePath.toString).bufferedReader())(reader =>
+                    Try(new Gson().fromJson(reader, classOf[TestRunResult])))
+            } else {
+                Failure(new Exception("Non-zero exit code: " ++ exitCode.toString))
+            }
+        }))).flatten.flatten.flatMap(_.flatten.toOption)
 
     def classpath(): String = new MavenClassLoader(project()).classpath()
 
