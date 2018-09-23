@@ -303,9 +303,9 @@ public class JUnitTestRunner extends BlockJUnit4ClassRunner {
 
                 if (statement == null) {
                     try {
-                        statement = methodBlock(test);
-
                         eachNotifier.fireTestStarted();
+
+                        statement = methodBlock(test);
 
                         if (!ranBeforeClass(method)) {
                             ranBeforeClassSet.add(method.getMethod().getDeclaringClass().getCanonicalName());

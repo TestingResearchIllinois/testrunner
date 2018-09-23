@@ -17,6 +17,8 @@ import scala.collection.JavaConverters._
   * Concurrency safe (if the underlying test suite can run concurrently)
   */
 class SmartRunner(mavenProject: MavenProject, testFramework: TestFramework, infoStore: TestInfoStore) extends Runner {
+    // TODO: Add ability to save/load test info
+
     override def framework(): TestFramework = testFramework
 
     override def project(): MavenProject = mavenProject

@@ -43,6 +43,11 @@ case class ExecutionInfo(classpath: String, javaAgent: Option[Path],
     def run(argVals: String*): Process = {
         val process = processBuilder(argVals:_*).start()
 
+        if (!inheritIO) {
+            new StreamGobbler(process.getInputStream).start()
+            new StreamGobbler(process.getErrorStream).start()
+        }
+
         if (timeout > 0) {
             process.waitFor(timeout, timeoutUnit)
         } else {
