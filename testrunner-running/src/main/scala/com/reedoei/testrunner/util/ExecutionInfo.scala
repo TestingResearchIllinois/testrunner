@@ -7,6 +7,7 @@ import java.util.concurrent.TimeUnit
 case class ExecutionInfo(classpath: String, javaAgent: Option[Path],
                          javaOpts: List[String],
                          properties: List[(String, String)],
+                         environmentVariables: java.util.Map[String, String],
                          clz: Class[_], inheritIO: Boolean,
                          timeout: Long, timeoutUnit: TimeUnit) {
     /**
@@ -33,11 +34,15 @@ case class ExecutionInfo(classpath: String, javaAgent: Option[Path],
         args.toList
 
     def processBuilder(argVals: String*): ProcessBuilder = {
-        if (inheritIO) {
+        val builder = if (inheritIO) {
             new ProcessBuilder(args(argVals:_*): _*).inheritIO()
         } else {
             new ProcessBuilder(args(argVals:_*): _*)
         }
+
+        builder.environment().putAll(environmentVariables)
+
+        builder
     }
 
     def run(argVals: String*): Process = {

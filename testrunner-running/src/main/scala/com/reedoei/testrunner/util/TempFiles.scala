@@ -11,17 +11,17 @@ object TempFiles {
       * Calls the function passed in with the path of a blank temporary file.
       * The file will no longer exist after this function ends
       */
-    def withTempFile[A](f: Path => A): Option[A] = {
+    def withTempFile[A](f: Path => A): Try[A] = {
         val path = File.createTempFile("temp", null).toPath
 
         val result = Try(f(path))
 
         Files.deleteIfExists(path)
 
-        result.toOption
+        result
     }
 
-    def withSeq[S[_] <: Traversable[_], A, B](seq: S[A])(f: Path => B): Option[B] = {
+    def withSeq[S[_] <: Traversable[_], A, B](seq: S[A])(f: Path => B): Try[B] = {
         withTempFile(path => {
             // Don't need to clear file because withTempFile will always return a blank file
             for (s <- seq) {
@@ -32,10 +32,10 @@ object TempFiles {
         })
     }
 
-    def withProperties[B](properties: Properties)(f: Path => B): Option[B] = {
+    def withProperties[B](properties: Properties)(f: Path => B): Try[B] = {
         withTempFile(path => autoClose(new FileOutputStream(path.toFile))(os => {
             properties.store(os, "")
             f(path)
-        }).toOption).flatten
+        })).flatten
     }
 }

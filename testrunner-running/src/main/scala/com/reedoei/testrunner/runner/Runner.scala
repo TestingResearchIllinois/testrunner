@@ -10,31 +10,43 @@ import com.reedoei.testrunner.data.results.TestRunResult
 import com.reedoei.testrunner.execution.Executor
 import com.reedoei.testrunner.util._
 import org.apache.maven.project.MavenProject
+import org.codehaus.plexus.util.xml.Xpp3Dom
 
 import scala.collection.JavaConverters._
 import scala.io.Source
 import scala.util.{Failure, Try}
 
 trait Runner {
-    def runList(testOrder: java.util.List[String]): Option[TestRunResult] =
+    def runList(testOrder: java.util.List[String]): Try[TestRunResult] =
         run(testOrder.asScala.toStream)
 
-    def runListWithCp(cp: String, testOrder: java.util.List[String]): Option[TestRunResult] =
+    def runListWithCp(cp: String, testOrder: java.util.List[String]): Try[TestRunResult] =
         runWithCp(cp, testOrder.asScala.toStream)
 
-    def run(testOrder: Stream[String]): Option[TestRunResult] = runWithCp(classpath(), testOrder)
+    def run(testOrder: Stream[String]): Try[TestRunResult] = runWithCp(classpath(), testOrder)
 
     def makeBuilder(cp: String): ExecutionInfoBuilder = {
         val builder = new ExecutionInfoBuilder(classOf[Executor]).classpath(cp)
 
         if (Configuration.config().getProperty(ConfigProps.CAPTURE_STATE, false)) {
             builder.javaAgent(Paths.get(Configuration.config().getProperty("testplugin.javaagent")))
-        } else {
-            builder
         }
+
+        builder.environment(getSurefireEnvironment)
     }
 
-    def runWithCp(cp: String, testOrder: Stream[String]): Option[TestRunResult] =
+    def getSurefireEnvironment: java.util.Map[String, String] =
+        project().getBuildPlugins.asScala
+            .find(p => p.getArtifactId == "maven-surefire-plugin")
+            .flatMap(p => Option(p.getConfiguration.asInstanceOf[Xpp3Dom].getChild("environmentVariables")))
+            .map(envVars => envVars.getChildren
+                .map(elem => elem.getName -> elem.getValue)
+                .toMap
+            )
+            .getOrElse(Map.empty)
+            .asJava
+
+    def runWithCp(cp: String, testOrder: Stream[String]): Try[TestRunResult] =
         TempFiles.withSeq(testOrder)(path =>
         TempFiles.withTempFile(outputPath =>
         TempFiles.withProperties(Configuration.config().properties())(propertiesPath => {
@@ -53,7 +65,7 @@ trait Runner {
             } else {
                 Failure(new Exception("Non-zero exit code: " ++ exitCode.toString))
             }
-        }))).flatten.flatten.flatMap(_.flatten.toOption)
+        }))).flatten.flatten.flatten.flatten
 
     def classpath(): String = new MavenClassLoader(project()).classpath()
 

@@ -8,6 +8,7 @@ import com.reedoei.testrunner.util.{ExecutionInfo, ExecutionInfoBuilder}
 import org.apache.maven.project.MavenProject
 
 import scala.collection.JavaConverters._
+import scala.util.{Failure, Success, Try}
 
 /**
   * Use this when you want to run similar sets of tests multiple times
@@ -23,17 +24,18 @@ class SmartRunner(mavenProject: MavenProject, testFramework: TestFramework, info
 
     override def project(): MavenProject = mavenProject
 
-    override def run(testOrder: Stream[String]): Option[TestRunResult] = {
+    override def run(testOrder: Stream[String]): Try[TestRunResult] = {
         val result = super.run(testOrder)
 
-        this.synchronized(infoStore.update(testOrder.toList.asJava, result))
+        this.synchronized(infoStore.update(testOrder.toList.asJava, result.toOption))
 
         // Make sure that we run exactly the set of tests that we intended to
         result.flatMap(result => {
             if (result.results().keySet().asScala.toSet == testOrder.toSet) {
-                Option(result)
+                Success(result)
             } else {
-                Option.empty
+                Failure(new RuntimeException("Set of executed tests is not equal to test list that should have been executed (" +
+                    result.results().size() + " tests executed, " + testOrder.length + " tests expected)"))
             }
         })
     }

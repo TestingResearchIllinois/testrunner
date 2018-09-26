@@ -6,7 +6,7 @@ import java.nio.file.Paths
 
 import com.reedoei.testrunner.configuration.{ConfigProps, Configuration}
 import org.apache.maven.execution.MavenSession
-import org.apache.maven.plugin.AbstractMojo
+import org.apache.maven.plugin.{AbstractMojo, MavenPluginManager}
 import org.apache.maven.plugins.annotations._
 import org.apache.maven.project.{MavenProject, ProjectBuilder}
 
@@ -30,6 +30,9 @@ class TestPluginPlugin extends AbstractMojo {
     @Component
     private var projectBuilder: ProjectBuilder = _
 
+    @Component
+    private var pluginManager: MavenPluginManager = _
+
     @Parameter(property = "testplugin.classname", defaultValue = "com.reedoei.testrunner.mavenplugin.TestRunner")
     private var className = "TestPluginPlugin"
 
@@ -43,6 +46,9 @@ class TestPluginPlugin extends AbstractMojo {
         configuration.setDefault("testplugin.runner.smart.timeout.multiplier", 4.toString)
         configuration.setDefault("testplugin.runner.smart.timeout.offset", 5.toString)
         configuration.setDefault("testplugin.runner.smart.timeout.pertest", 2.toString)
+        configuration.setDefault("testplugin.classpath", TestPluginPlugin.pluginClasspath())
+
+        configJavaAgentPath()
     }
 
     def configJavaAgentPath(): Unit =
@@ -54,11 +60,40 @@ class TestPluginPlugin extends AbstractMojo {
         val clz = Class.forName(className)
 
         if (propertiesPath != null && !propertiesPath.isEmpty) {
-            setDefaults(Configuration.reloadConfig(Paths.get(propertiesPath)))
+            Configuration.reloadConfig(Paths.get(propertiesPath))
         }
 
-        Configuration.config().setDefault("testplugin.classpath", TestPluginPlugin.pluginClasspath())
-        configJavaAgentPath()
+        System.getProperties.forEach((key, value) =>
+            Configuration.config().properties().setProperty(key.toString, value.toString))
+
+        setDefaults(Configuration.config())
+
+//        val surefire = project.getPlugin("org.apache.maven.plugins:maven-surefire-plugin")
+//        println(surefire)
+//        println(project.getRemotePluginRepositories)
+//        println(project.getClassRealm)
+//
+//        println(getPluginContext)
+//        println(getPluginContext.get("pluginDescriptor"))
+//
+//        val pluginDescriptor: PluginDescriptor = getPluginContext.get("pluginDescriptor").asInstanceOf[PluginDescriptor]
+//
+//        println(pluginDescriptor.getClassRealm)
+//
+//        val surefireDescriptor = pluginManager.getMojoDescriptor(surefire, "test",
+//            project.getRemotePluginRepositories, session.getRepositorySession)
+//        surefireDescriptor.getPluginDescriptor.setClassRealm(pluginDescriptor.getClassRealm)
+//        println(surefireDescriptor)
+
+//        val containerField = classOf[DefaultMavenPluginManager].getDeclaredField("container")
+//        containerField.setAccessible(true)
+//        pluginManager.asInstanceOf[DefaultMavenPluginManager]
+//        println(containerField.get(pluginManager).asInstanceOf[DefaultPlexusContainer].getCo
+
+//        val configuredSurefire = pluginManager.getConfiguredMojo(classOf[AbstractMojo], session,
+//            new MojoExecution(surefireDescriptor))
+//
+//        println(configuredSurefire)
 
         val obj = clz.getConstructor().newInstance()
         clz.getMethod("execute", classOf[MavenProject]).invoke(obj, project)

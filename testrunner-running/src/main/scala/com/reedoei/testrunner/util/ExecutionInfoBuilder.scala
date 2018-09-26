@@ -11,6 +11,7 @@ class ExecutionInfoBuilder(clz: Class[_]) {
     private var timeoutUnit: TimeUnit = TimeUnit.SECONDS
     private var properties: List[(String, String)] = List()
     private var inheritIO: Boolean = true
+    private var environment: java.util.Map[String, String] = new java.util.HashMap[String, String]()
 
     def timeout(timeout: Long, timeoutUnit: TimeUnit): ExecutionInfoBuilder = {
         this.timeout = timeout
@@ -55,6 +56,12 @@ class ExecutionInfoBuilder(clz: Class[_]) {
         this
     }
 
-    def build(): ExecutionInfo =
-        ExecutionInfo(classpath, javaAgent, javaOpts, properties, clz, inheritIO, timeout, timeoutUnit)
+    def environment(env: java.util.Map[String, String]): ExecutionInfoBuilder = {
+        environment = env
+        this
+    }
+
+    def build(): ExecutionInfo = {
+        ExecutionInfo(classpath, javaAgent, javaOpts, properties, environment, clz, inheritIO, timeout, timeoutUnit)
+    }
 }
