@@ -95,12 +95,18 @@ class TestPluginPlugin extends AbstractMojo {
 //
 //        println(configuredSurefire)
 
+        TestPluginPlugin.mojo = this
+        TestPluginPlugin.mavenProject = project
+
         val obj = clz.getConstructor().newInstance()
         clz.getMethod("execute", classOf[MavenProject]).invoke(obj, project)
     }
 }
 
 object TestPluginPlugin {
+    var mojo: AbstractMojo = _
+    var mavenProject: MavenProject = _
+
     private var pluginCpURLs: Array[URL] = null
     private var pluginCp: String = null
 

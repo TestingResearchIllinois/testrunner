@@ -23,9 +23,6 @@ object Executor {
     def run(testFramework: String, testsFile: Path, configPath: Path, outputPath: Path): Int = {
         Configuration.reloadConfig(configPath)
 
-        // Only do this step if an agent class has been specified
-        Option(System.getProperty("testplugin.agent_class")).foreach(AgentLoader.loadDynamicAgent)
-
         val tests = Files.lines(testsFile).collect(Collectors.toList())
 
         val result = Try(testFramework match {

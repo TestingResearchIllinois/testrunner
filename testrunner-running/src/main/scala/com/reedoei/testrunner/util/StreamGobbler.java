@@ -1,15 +1,23 @@
 package com.reedoei.testrunner.util;
 
 import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.PrintStream;
+import java.nio.file.Path;
 
 public class StreamGobbler extends Thread {
     private InputStream is;
+    private PrintStream ps;
 
-    public StreamGobbler(final InputStream is) {
+    public StreamGobbler(final InputStream is, final Path outputPath) {
         this.is = is;
+        try {
+            ps = new PrintStream(new FileOutputStream(outputPath.toFile()));
+        } catch (FileNotFoundException ignored) {}
     }
 
     @Override
@@ -18,7 +26,12 @@ public class StreamGobbler extends Thread {
             final BufferedReader br = new BufferedReader(new InputStreamReader(is));
 
             while (true) {
-                if (br.readLine() == null) break;
+                final String line = br.readLine();
+                if (line == null) {
+                    break;
+                } else {
+                    ps.println(line);
+                }
             }
         } catch (IOException e) {
             e.printStackTrace();

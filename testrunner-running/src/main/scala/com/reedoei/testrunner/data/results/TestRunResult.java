@@ -12,12 +12,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 public class TestRunResult {
     public static TestRunResult empty() {
         return new TestRunResult(new ArrayList<>(), new HashMap<>(), new HashMap<>());
     }
 
+    private final String id;
     private final List<String> testOrder;
     private final Map<String, TestResult> results;
     private final Map<String, DiffContainer> diffs;
@@ -26,6 +28,11 @@ public class TestRunResult {
         this.testOrder = testOrder;
         this.results = results;
         this.diffs = diffs;
+        id = System.nanoTime() + "-" + UUID.randomUUID().toString();
+    }
+
+    public String id() {
+        return id;
     }
 
     public List<String> testOrder() {
@@ -52,9 +59,14 @@ public class TestRunResult {
 
     public void writeTo(final String outputPath) {
         try (final PrintStream p = outputStream(outputPath)) {
-            p.print(new Gson().toJson(this));
+            p.print(toString());
         } catch (IOException e) {
             e.printStackTrace(System.err);
         }
+    }
+
+    @Override
+    public String toString() {
+        return new Gson().toJson(this);
     }
 }

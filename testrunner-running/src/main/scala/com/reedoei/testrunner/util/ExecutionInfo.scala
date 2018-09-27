@@ -8,7 +8,7 @@ case class ExecutionInfo(classpath: String, javaAgent: Option[Path],
                          javaOpts: List[String],
                          properties: List[(String, String)],
                          environmentVariables: java.util.Map[String, String],
-                         clz: Class[_], inheritIO: Boolean,
+                         clz: Class[_], outputPath: Path,
                          timeout: Long, timeoutUnit: TimeUnit) {
     /**
       * This is an ugly workaround for Scala objects, whose class names end with $ despite the static main method
@@ -34,7 +34,7 @@ case class ExecutionInfo(classpath: String, javaAgent: Option[Path],
         args.toList
 
     def processBuilder(argVals: String*): ProcessBuilder = {
-        val builder = if (inheritIO) {
+        val builder = if (outputPath == null) {
             new ProcessBuilder(args(argVals:_*): _*).inheritIO()
         } else {
             new ProcessBuilder(args(argVals:_*): _*)
@@ -48,9 +48,9 @@ case class ExecutionInfo(classpath: String, javaAgent: Option[Path],
     def run(argVals: String*): Process = {
         val process = processBuilder(argVals:_*).start()
 
-        if (!inheritIO) {
-            new StreamGobbler(process.getInputStream).start()
-            new StreamGobbler(process.getErrorStream).start()
+        if (outputPath != null) {
+            new StreamGobbler(process.getInputStream, outputPath).start()
+            new StreamGobbler(process.getErrorStream, outputPath).start()
         }
 
         if (timeout > 0) {

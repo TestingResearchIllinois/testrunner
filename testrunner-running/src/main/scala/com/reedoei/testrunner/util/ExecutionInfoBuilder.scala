@@ -10,7 +10,7 @@ class ExecutionInfoBuilder(clz: Class[_]) {
     private var timeout: Long = -1
     private var timeoutUnit: TimeUnit = TimeUnit.SECONDS
     private var properties: List[(String, String)] = List()
-    private var inheritIO: Boolean = true
+    private var outputPath: Path = null
     private var environment: java.util.Map[String, String] = new java.util.HashMap[String, String]()
 
     def timeout(timeout: Long, timeoutUnit: TimeUnit): ExecutionInfoBuilder = {
@@ -51,8 +51,8 @@ class ExecutionInfoBuilder(clz: Class[_]) {
         this
     }
 
-    def inheritIO(inheritIO: Boolean): ExecutionInfoBuilder = {
-        this.inheritIO = inheritIO
+    def outputPath(outputPath: Path): ExecutionInfoBuilder = {
+        this.outputPath = outputPath
         this
     }
 
@@ -62,6 +62,6 @@ class ExecutionInfoBuilder(clz: Class[_]) {
     }
 
     def build(): ExecutionInfo = {
-        ExecutionInfo(classpath, javaAgent, javaOpts, properties, environment, clz, inheritIO, timeout, timeoutUnit)
+        ExecutionInfo(classpath, javaAgent, javaOpts, properties, environment, clz, outputPath, timeout, timeoutUnit)
     }
 }
