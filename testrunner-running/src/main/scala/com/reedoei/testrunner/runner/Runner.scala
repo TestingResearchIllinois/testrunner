@@ -75,11 +75,6 @@ trait Runner {
     def execution(testOrder: Stream[String], executionInfoBuilder: ExecutionInfoBuilder): ExecutionInfo
 }
 
-trait RunnerFactory[A <: Runner] {
+trait RunnerProvider[A <: Runner] {
     def withFramework(project: MavenProject, framework: TestFramework): A
-}
-
-object RunnerFactory {
-    def from(project: MavenProject): Option[Runner] =
-        TestFramework.testFramework(project).map(SmartRunner.withFramework(project, _))
 }

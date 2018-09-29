@@ -13,7 +13,7 @@ class FixedOrderRunner(mavenProject: MavenProject, testFramework: TestFramework)
     override def project(): MavenProject = mavenProject
 }
 
-object FixedOrderRunner extends RunnerFactory[FixedOrderRunner] {
+object FixedOrderRunner extends RunnerProvider[FixedOrderRunner] {
     override def withFramework(project: MavenProject, framework: TestFramework): FixedOrderRunner =
         new FixedOrderRunner(project, framework)
 }

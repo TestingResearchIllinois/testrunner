@@ -48,7 +48,7 @@ class SmartRunner(mavenProject: MavenProject, testFramework: TestFramework, info
     def info(): TestInfoStore = infoStore
 }
 
-object SmartRunner extends RunnerFactory[SmartRunner] {
+object SmartRunner extends RunnerProvider[SmartRunner] {
     override def withFramework(project: MavenProject, framework: TestFramework): SmartRunner =
         new SmartRunner(project, framework, new TestInfoStore)
 }
