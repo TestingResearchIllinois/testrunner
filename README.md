@@ -1,8 +1,6 @@
 # Test Runner
 
-This plugin allows you to create tools that operate on Java (specifically, JUnit) tests with extremely fine-grained control.
-
-If you want the latest version of this plugin (or for some reason you can't get if off Maven central), you can run:
+This plugin allows you to create tools that operate on Java (JUnit) tests with fine-grained control (e.g., running them in arbitrary orders).
 
 # Quickstart
 
@@ -49,3 +47,6 @@ You can generate documentation using:
 ```
 mvn javadoc:javadoc scala:doc
 ```
+# Documentation
+
+See the [wiki](https://github.com/ReedOei/testrunner/wiki).
