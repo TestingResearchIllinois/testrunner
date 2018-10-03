@@ -35,11 +35,14 @@ trait Runner {
         builder.environment(getSurefireEnvironment)
     }
 
-    def getSurefireEnvironment: java.util.Map[String, String] =
+    private def getSurefireEnvironment: java.util.Map[String, String] =
         project().getBuildPlugins.asScala
             .find(p => p.getArtifactId == "maven-surefire-plugin")
-            .flatMap(p => Option(p.getConfiguration.asInstanceOf[Xpp3Dom].getChild("environmentVariables")))
-            .map(envVars => envVars.getChildren
+            .flatMap(p => Option(p.getConfiguration))
+            .flatMap(conf => Option(conf.asInstanceOf[Xpp3Dom]))
+            .flatMap(conf => Option(conf.getChild("environmentVariables")))
+            .flatMap(envVars => Option(envVars.getChildren))
+            .map(children => children
                 .map(elem => elem.getName -> elem.getValue)
                 .toMap
             )
