@@ -102,15 +102,17 @@ public class JUnitTestRunner extends BlockJUnit4ClassRunner {
         final EachTestNotifier testNotifier = new EachTestNotifier(notifier, this.getDescription());
 
         for (final JUnitTest test : tests) {
-            try {
-                Configuration.config().properties().setProperty("testrunner.current_test", fullName(test.description()));
-                runChild(test, notifier);
-            } catch (AssumptionViolatedException e) {
-                testNotifier.fireTestIgnored();
-            } catch (StoppedByUserException e) {
-                throw e;
-            } catch (Throwable e) {
-                testNotifier.addFailure(e);
+            if (test.javaClass().getAnnotation(Ignore.class) == null) {
+                try {
+                    Configuration.config().properties().setProperty("testrunner.current_test", fullName(test.description()));
+                    runChild(test, notifier);
+                } catch (AssumptionViolatedException e) {
+                    testNotifier.fireTestIgnored();
+                } catch (StoppedByUserException e) {
+                    throw e;
+                } catch (Throwable e) {
+                    testNotifier.addFailure(e);
+                }
             }
         }
     }
@@ -209,11 +211,13 @@ public class JUnitTestRunner extends BlockJUnit4ClassRunner {
 
     private Statement withMethodRules(JUnitTest test, List<TestRule> testRules,
                                       Object target, Statement result) {
-        for (MethodRule each : getMethodRules(test, target)) {
-            if (!testRules.contains(each)) {
-                result = each.apply(result, test.frameworkMethod(), target);
+        try {
+            for (MethodRule each : getMethodRules(test, target)) {
+                if (!testRules.contains(each)) {
+                    result = each.apply(result, test.frameworkMethod(), target);
+                }
             }
-        }
+        } catch (Throwable ignored) {}
         return result;
     }
 
@@ -236,25 +240,33 @@ public class JUnitTestRunner extends BlockJUnit4ClassRunner {
 
     private Statement withTestRules(JUnitTest test, List<TestRule> testRules,
                                     Statement statement) {
-        return testRules.isEmpty() ? statement :
-                new RunRules(statement, testRules, test.description());
+        try {
+            return testRules.isEmpty() ? statement :
+                    new RunRules(statement, testRules, test.description());
+        } catch (Throwable ignored) {}
+
+        return statement;
     }
 
     private List<TestRule> getTestRules(JUnitTest test, Object target) {
-        List<TestRule> result = test.testClass().getAnnotatedMethodValues(target, Rule.class, TestRule.class);
+        try {
+            List<TestRule> result = test.testClass().getAnnotatedMethodValues(target, Rule.class, TestRule.class);
 
-        result.addAll(test.testClass().getAnnotatedFieldValues(target, Rule.class, TestRule.class));
+            result.addAll(test.testClass().getAnnotatedFieldValues(target, Rule.class, TestRule.class));
 
-        // Add a timeout rule to every test if enabled
-        final int universalTimeout = Configuration.config().getProperty("testplugin.runner.timeout.universal", -1);
-        if (universalTimeout > 0) {
-            result.add(Timeout.builder()
-                    .withLookingForStuckThread(true)
-                    .withTimeout(universalTimeout, TimeUnit.SECONDS)
-                    .build());
-        }
+            // Add a timeout rule to every test if enabled
+            final int universalTimeout = Configuration.config().getProperty("testplugin.runner.timeout.universal", -1);
+            if (universalTimeout > 0) {
+                result.add(Timeout.builder()
+                        .withLookingForStuckThread(true)
+                        .withTimeout(universalTimeout, TimeUnit.SECONDS)
+                        .build());
+            }
 
-        return result;
+            return result;
+        } catch (Throwable ignored) {}
+
+        return new ArrayList<>();
     }
 
     private Statement methodBlock(final JUnitTest test) {

@@ -37,6 +37,10 @@ public class TestInfoStore {
     }
 
     public void update(final List<String> order, final TestRunResult results) throws FlakyTestException {
+        if (results == null || results.results() == null) {
+            return;
+        }
+
         results.results().forEach((testName, testResult) -> {
             if (testInfo.containsKey(testName)) {
                 testInfo.get(testName).updateWith(order, testResult);
