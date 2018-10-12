@@ -1,12 +1,12 @@
 package com.reedoei.testrunner.execution
 
-import java.io.{FileOutputStream, PrintStream}
 import java.nio.file.{Files, Path, Paths}
 import java.util.stream.Collectors
 
 import com.reedoei.testrunner.configuration.Configuration
 
 import scala.util.Try
+
 
 // This needs to be here so that Scala can find the class so we can execute from the command line
 class Executor
@@ -30,10 +30,8 @@ object Executor {
                 JUnitTestExecutor.runOrder(tests, true, false)
                     .writeTo(outputPath.toAbsolutePath.toString)
             case _ => throw new Exception("An error ocurred while running tests.")
-        })
+        }).toOption
 
-        result.failed.foreach(t => t.printStackTrace(new PrintStream(new FileOutputStream("temp"))))
-
-        if (result.isSuccess) {0} else {1}
+        if (result.isDefined) {0} else {1}
     }
 }
