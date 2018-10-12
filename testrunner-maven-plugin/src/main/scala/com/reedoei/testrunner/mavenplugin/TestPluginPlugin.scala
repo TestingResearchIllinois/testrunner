@@ -33,10 +33,10 @@ class TestPluginPlugin extends AbstractMojo {
     @Component
     private var pluginManager: MavenPluginManager = _
 
-    @Parameter(property = "testplugin.classname", defaultValue = "com.reedoei.testrunner.mavenplugin.TestRunner")
+    @Parameter(defaultValue = "com.reedoei.testrunner.mavenplugin.TestRunner")
     private var className = "TestPluginPlugin"
 
-    @Parameter(property = "testplugin.properties", defaultValue = "")
+    @Parameter(defaultValue = "")
     private var propertiesPath = ""
 
     def setDefaults(configuration: Configuration): Unit = {
@@ -57,7 +57,7 @@ class TestPluginPlugin extends AbstractMojo {
             .foreach(url => Configuration.config().setDefault("testplugin.javaagent", url.toString))
 
     override def execute(): Unit = {
-        val clz = Class.forName(className)
+        val clz = Class.forName(Configuration.config().getProperty("testplugin.className", className))
 
         if (propertiesPath != null && !propertiesPath.isEmpty) {
             Configuration.reloadConfig(Paths.get(propertiesPath))
