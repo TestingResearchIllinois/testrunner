@@ -57,14 +57,14 @@ class TestPluginPlugin extends AbstractMojo {
             .foreach(url => Configuration.config().setDefault("testplugin.javaagent", url.toString))
 
     override def execute(): Unit = {
+        System.getProperties.forEach((key, value) =>
+            Configuration.config().properties().setProperty(key.toString, value.toString))
+
         val clz = Class.forName(Configuration.config().getProperty("testplugin.className", className))
 
         if (propertiesPath != null && !propertiesPath.isEmpty) {
             Configuration.reloadConfig(Paths.get(propertiesPath))
         }
-
-        System.getProperties.forEach((key, value) =>
-            Configuration.config().properties().setProperty(key.toString, value.toString))
 
         setDefaults(Configuration.config())
 
