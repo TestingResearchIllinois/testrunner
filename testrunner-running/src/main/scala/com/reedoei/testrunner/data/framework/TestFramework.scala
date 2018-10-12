@@ -1,22 +1,24 @@
 package com.reedoei.testrunner.data.framework
 
+import com.reedoei.testrunner.util.MavenClassLoader
 import org.apache.maven.project.MavenProject
 
-import scala.collection.JavaConverters._
+import scala.util.Try
 
 sealed abstract class TestFramework
 case object JUnit extends TestFramework
 
 object TestFramework {
-    def testFramework(project: MavenProject): Option[TestFramework] = {
-        // Not sure why we have to cast here, but with this, Scala can't seem to figure out that
-        // we should get a list of dependencies
-        val deps = project.getDependencies.asScala
 
-        if (deps.exists(dep => dep.getArtifactId == "junit")) {
+    def testFramework(project: MavenProject): Option[TestFramework] = {
+        val tryLoader = canLoad(new MavenClassLoader(project).loader)(_)
+
+        if (tryLoader(classOf[org.junit.Test])) {
             Option(JUnit)
         } else {
             Option.empty
         }
     }
+
+    private def canLoad(loader: ClassLoader)(clz: Class[_]): Boolean = Try(loader.loadClass(clz.getCanonicalName)).isSuccess
 }

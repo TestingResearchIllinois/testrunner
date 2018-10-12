@@ -90,13 +90,12 @@ public class JUnitTestExecutor {
                 tests.add(test);
             } catch (ClassNotFoundException e) {
                 knownResults.add(TestResultFactory.missing(fullMethodName));
-                System.out.println("  Skipped missing test : " + fullMethodName);
+                System.out.println("Skipped missing test: " + fullMethodName);
             } catch (ExceptionInInitializerError e) {
                 knownResults.add(TestResultFactory.failOrError(e, 0.0, fullMethodName));
                 System.out.println("Test failed in initialization: " + fullMethodName);
             } catch (Throwable e) {
-                System.out.println("[ERROR] Encountered exception while initializing JUnitTest for '" + fullMethodName + "'");
-                throw e;
+                throw new RuntimeException("Error while initializing " + fullMethodName, e);
             }
         }
 
