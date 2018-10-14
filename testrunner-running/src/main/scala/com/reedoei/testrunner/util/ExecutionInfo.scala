@@ -40,7 +40,8 @@ case class ExecutionInfo(classpath: String, javaAgent: Option[Path],
             new ProcessBuilder(args(argVals:_*): _*)
         }
 
-        builder.environment().putAll(environmentVariables)
+        // Don't set environment variables to null because it causes issues
+        environmentVariables.forEach((k, v) => if (v != null) builder.environment().put(k, v))
 
         builder
     }
