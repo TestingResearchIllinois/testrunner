@@ -32,6 +32,6 @@ object Executor {
             case _ => throw new Exception("An error ocurred while running tests.")
         }).toOption
 
-        if (result.isDefined) {0} else {1}
+        if (result.isDefined) {0} else {2}
     }
 }
