@@ -2,6 +2,7 @@ package com.reedoei.testrunner.runner
 
 import java.io.File
 import java.nio.file.Paths
+import java.nio.file.Files
 
 import com.google.gson.Gson
 import com.reedoei.testrunner.configuration.{ConfigProps, Configuration}
@@ -55,8 +56,9 @@ trait Runner {
         TempFiles.withProperties(Configuration.config().properties())(propertiesPath => {
             val builder = makeBuilder(cp + File.pathSeparator + Configuration.config().getProperty("testplugin.classpath"))
 
-            val exitCode =
-                execution(testOrder, builder).run(
+            val info = execution(testOrder, builder)
+
+            val exitCode = info.run(
                     framework().toString,
                     path.toAbsolutePath.toString,
                     propertiesPath.toAbsolutePath.toString,
@@ -66,7 +68,11 @@ trait Runner {
                 autoClose(Source.fromFile(outputPath.toAbsolutePath.toString).bufferedReader())(reader =>
                     Try(new Gson().fromJson(reader, classOf[TestRunResult])))
             } else {
-                Failure(new Exception("Non-zero exit code: " ++ exitCode.toString))
+                // Try to copy the output log so that it can be inspected
+                val failureLog = project().getBasedir.toPath.resolve("failing-test-output")
+                Files.deleteIfExists(failureLog)
+                Files.copy(info.outputPath, failureLog)
+                Failure(new Exception("Non-zero exit code (output in " + failureLog.toAbsolutePath + "): " ++ exitCode.toString))
             }
         }))).flatten.flatten.flatten.flatten
 
