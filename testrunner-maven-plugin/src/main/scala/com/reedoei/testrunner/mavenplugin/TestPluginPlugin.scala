@@ -110,6 +110,11 @@ object TestPluginPlugin {
     private var pluginCpURLs: Array[URL] = null
     private var pluginCp: String = null
 
+    def debug(str: String): Unit = mojo.getLog.debug(str)
+    def info(str: String): Unit = mojo.getLog.info(str)
+    def error(str: String): Unit = mojo.getLog.error(str)
+    def error(t: Throwable): Unit = mojo.getLog.error(t)
+
     def generate(): Unit = {
         // TODO: When upgrading past Java 8, this will probably no longer work
         // (cannot cast any ClassLoader to URLClassLoader)
