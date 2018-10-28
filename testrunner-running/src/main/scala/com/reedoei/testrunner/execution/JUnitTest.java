@@ -23,8 +23,8 @@ public class JUnitTest {
         this.fullMethodName = fullMethodName;
 
         final String className = fullMethodName.substring(0, this.fullMethodName.lastIndexOf("."));
-        this.clz = new TestClass(Class.forName(className));
 
+        this.clz = new TestClass(Class.forName(className));
         this.junitMethod = fullMethodName.substring(this.fullMethodName.lastIndexOf(".") + 1);
 
         this.i = i;

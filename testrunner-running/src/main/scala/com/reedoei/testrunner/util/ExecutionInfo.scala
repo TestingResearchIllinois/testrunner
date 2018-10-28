@@ -1,5 +1,6 @@
 package com.reedoei.testrunner.util
 
+import java.io.{FileOutputStream, PrintStream}
 import java.nio.file.Path
 import java.util.Objects
 import java.util.concurrent.TimeUnit
@@ -50,8 +51,9 @@ case class ExecutionInfo(classpath: String, javaAgent: Option[Path],
         val process = processBuilder(argVals:_*).start()
 
         if (outputPath != null) {
-            new StreamGobbler(process.getInputStream, outputPath).start()
-            new StreamGobbler(process.getErrorStream, outputPath).start()
+            val ps = new PrintStream(new FileOutputStream(outputPath.toFile()))
+            new StreamGobbler(process.getInputStream, ps).start()
+            new StreamGobbler(process.getErrorStream, ps).start()
         }
 
         if (timeout > 0) {

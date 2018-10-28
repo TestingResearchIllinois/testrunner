@@ -13,11 +13,9 @@ public class StreamGobbler extends Thread {
     private InputStream is;
     private PrintStream ps;
 
-    public StreamGobbler(final InputStream is, final Path outputPath) {
+    public StreamGobbler(final InputStream is, final PrintStream ps) {
         this.is = is;
-        try {
-            ps = new PrintStream(new FileOutputStream(outputPath.toFile()));
-        } catch (FileNotFoundException ignored) {}
+        this.ps = ps;
     }
 
     @Override
