@@ -40,6 +40,6 @@ class TestRunner extends TestPlugin {
     override def execute(project: MavenProject): Unit =
         RunnerFactory.from(project)
             .map(_.run(tests(Configuration.config().getProperty("testrunner.source", null), project)).get)
-            .getOrElse(TestRunResult.empty())
+            .getOrElse(TestRunResult.empty("failed"))
             .writeTo(Configuration.config().getProperty("testrunner.output", defaultOutputLocation(project)))
 }
