@@ -29,7 +29,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class JUnitTestExecutor {
-    public static TestRunResult runOrder(final List<String> testList,
+    public static TestRunResult runOrder(final String testRunId,
+                                         final List<String> testList,
                                          final boolean skipMissing,
                                          final boolean runSeparately)
             throws ClassNotFoundException{
@@ -41,9 +42,9 @@ public class JUnitTestExecutor {
         }
 
         if (runSeparately) {
-            return executor.executeSeparately();
+            return executor.executeSeparately(testRunId);
         } else {
-            return executor.executeWithJUnit4Runner();
+            return executor.executeWithJUnit4Runner(testRunId);
         }
     }
 
@@ -276,7 +277,7 @@ public class JUnitTestExecutor {
         return xstream;
     }
 
-    private TestRunResult execute(final JUnitTestRunner runner) {
+    private TestRunResult execute(final String testRunId, final JUnitTestRunner runner) {
         final PrintStream currOut = System.out;
         final PrintStream currErr = System.err;
 
@@ -303,7 +304,7 @@ public class JUnitTestExecutor {
 
         final Set<TestResult> results = results(re, runner.tests(), listener);
 
-        final TestRunResult finalResult = TestRunResult.empty();
+        final TestRunResult finalResult = TestRunResult.empty(testRunId);
 
         for (final JUnitTest test : runner.tests()) {
             finalResult.testOrder().add(test.name());
@@ -316,7 +317,7 @@ public class JUnitTestExecutor {
         return finalResult;
     }
 
-    private TestRunResult execute(final List<JUnitTest> tests) {
+    private TestRunResult execute(final String testRunId, final List<JUnitTest> tests) {
         // This will happen only if no tests are selected by the filter.
         // In this case, we will throw an exception with a name that makes sense.
         if (tests.isEmpty()) {
@@ -324,23 +325,23 @@ public class JUnitTestExecutor {
         }
 
         try {
-            return execute(new JUnitTestRunner(tests));
+            return execute(testRunId, new JUnitTestRunner(tests));
         } catch (InitializationError initializationError) {
             initializationError.printStackTrace();
         }
 
-        return TestRunResult.empty();
+        return TestRunResult.empty(testRunId);
     }
 
-    public Optional<TestRunResult> execute() {
+    public Optional<TestRunResult> execute(final String testRunId) {
         try {
             final JUnitTestRunner runner = new JUnitTestRunner(testOrder);
-            final TestRunResult results = execute(runner);
+            final TestRunResult results = execute(testRunId, runner);
 
             final List<String> testOrderNames =
                     testOrder.stream().map(JUnitTest::name).collect(Collectors.toList());
 
-            return Optional.of(new TestRunResult(testOrderNames, results.results(), runner.getStateDiffs()));
+            return Optional.of(new TestRunResult(testRunId, testOrderNames, results.results(), runner.getStateDiffs()));
         } catch (InitializationError initializationError) {
             initializationError.printStackTrace();
         }
@@ -348,11 +349,11 @@ public class JUnitTestExecutor {
         return Optional.empty();
     }
 
-    public TestRunResult executeSeparately() {
-        final TestRunResult results = TestRunResult.empty();
+    public TestRunResult executeSeparately(final String testRunId) {
+        final TestRunResult results = TestRunResult.empty(testRunId);
 
         for (final JUnitTest test : testOrder) {
-            final TestRunResult testResult = execute(Collections.singletonList(test));
+            final TestRunResult testResult = execute(testRunId, Collections.singletonList(test));
 
             results.results().putAll(testResult.results());
             results.diffs().putAll(testResult.diffs());
@@ -361,8 +362,8 @@ public class JUnitTestExecutor {
         return results;
     }
 
-    public TestRunResult executeWithJUnit4Runner() {
-        return execute(testOrder);
+    public TestRunResult executeWithJUnit4Runner(final String testRunId) {
+        return execute(testRunId, testOrder);
 	}
 
 }

@@ -14,20 +14,20 @@ class Executor
 object Executor {
     def main(args: Array[String]): Unit = {
         System.exit(args match {
-            case Array(testFramework, testsFile, configPath, outputPath) =>
-                run(testFramework, Paths.get(testsFile), Paths.get(configPath), Paths.get(outputPath))
+            case Array(testRunId, testFramework, testsFile, configPath, outputPath) =>
+                run(testRunId, testFramework, Paths.get(testsFile), Paths.get(configPath), Paths.get(outputPath))
             case _ => 1
         })
     }
 
-    def run(testFramework: String, testsFile: Path, configPath: Path, outputPath: Path): Int = {
+    def run(testRunId: String, testFramework: String, testsFile: Path, configPath: Path, outputPath: Path): Int = {
         Configuration.reloadConfig(configPath)
 
         val tests = Files.lines(testsFile).collect(Collectors.toList())
 
         val result = Try(testFramework match {
             case "JUnit" =>
-                JUnitTestExecutor.runOrder(tests, true, false)
+                JUnitTestExecutor.runOrder(testRunId, tests, true, false)
                     .writeTo(outputPath.toAbsolutePath.toString)
             case _ => throw new Exception("An error ocurred while running tests.")
         }).toOption

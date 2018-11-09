@@ -3,6 +3,7 @@ package com.reedoei.testrunner.runner
 import java.io.File
 import java.nio.file.Paths
 import java.nio.file.Files
+import java.util.UUID
 
 import com.google.gson.Gson
 import com.reedoei.testrunner.configuration.{ConfigProps, Configuration}
@@ -50,6 +51,8 @@ trait Runner {
             .getOrElse(Map.empty)
             .asJava
 
+    def generateTestRunId(): String = System.currentTimeMillis() + "-" + UUID.randomUUID.toString
+
     def runWithCp(cp: String, testOrder: Stream[String]): Try[TestRunResult] =
         TempFiles.withSeq(testOrder)(path =>
         TempFiles.withTempFile(outputPath =>
@@ -58,7 +61,10 @@ trait Runner {
 
             val info = execution(testOrder, builder)
 
+            val testRunId = generateTestRunId()
+
             val exitCode = info.run(
+                    testRunId,
                     framework().toString,
                     path.toAbsolutePath.toString,
                     propertiesPath.toAbsolutePath.toString,
@@ -69,7 +75,7 @@ trait Runner {
                     Try(new Gson().fromJson(reader, classOf[TestRunResult])))
             } else {
                 // Try to copy the output log so that it can be inspected
-                val failureLog = project().getBasedir.toPath.resolve("failing-test-output")
+                val failureLog = project().getBasedir.toPath.resolve("failing-test-output-" + testRunId)
                 Files.deleteIfExists(failureLog)
                 Files.copy(info.outputPath, failureLog)
                 Failure(new Exception("Non-zero exit code (output in " + failureLog.toAbsolutePath + "): " ++ exitCode.toString))

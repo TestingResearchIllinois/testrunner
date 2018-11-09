@@ -15,8 +15,8 @@ import java.util.Map;
 import java.util.UUID;
 
 public class TestRunResult {
-    public static TestRunResult empty() {
-        return new TestRunResult(new ArrayList<>(), new HashMap<>(), new HashMap<>());
+    public static TestRunResult empty(final String id) {
+        return new TestRunResult(id, new ArrayList<>(), new HashMap<>(), new HashMap<>());
     }
 
     private final String id;
@@ -24,11 +24,12 @@ public class TestRunResult {
     private final Map<String, TestResult> results;
     private final Map<String, DiffContainer> diffs;
 
-    public TestRunResult(final List<String> testOrder, final Map<String, TestResult> results, final Map<String, DiffContainer> diffs) {
+    public TestRunResult(final String id, final List<String> testOrder,
+                         final Map<String, TestResult> results, final Map<String, DiffContainer> diffs) {
+        this.id = id;
         this.testOrder = testOrder;
         this.results = results;
         this.diffs = diffs;
-        id = System.nanoTime() + "-" + UUID.randomUUID().toString();
     }
 
     public String id() {
