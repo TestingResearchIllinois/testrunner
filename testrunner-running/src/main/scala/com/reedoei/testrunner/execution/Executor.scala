@@ -29,9 +29,14 @@ object Executor {
             case "JUnit" =>
                 JUnitTestExecutor.runOrder(testRunId, tests, true, false)
                     .writeTo(outputPath.toAbsolutePath.toString)
-            case _ => throw new Exception("An error ocurred while running tests.")
-        }).toOption
+            case _ => throw new Exception("Unknown test framework: " ++ testFramework)
+        })
 
-        if (result.isDefined) {0} else {2}
+        if (result.isFailure) {
+            result.failed.get.printStackTrace(System.err)
+            2
+        } else {
+            0
+        }
     }
 }

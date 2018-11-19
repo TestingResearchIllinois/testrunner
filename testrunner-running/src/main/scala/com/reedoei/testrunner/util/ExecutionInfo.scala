@@ -51,7 +51,7 @@ case class ExecutionInfo(classpath: String, javaAgent: Option[Path],
         val process = processBuilder(argVals:_*).start()
 
         if (outputPath != null) {
-            val ps = new PrintStream(new FileOutputStream(outputPath.toFile()))
+            val ps = new PrintStream(new FileOutputStream(outputPath.toFile))
             new StreamGobbler(process.getInputStream, ps).start()
             new StreamGobbler(process.getErrorStream, ps).start()
         }
