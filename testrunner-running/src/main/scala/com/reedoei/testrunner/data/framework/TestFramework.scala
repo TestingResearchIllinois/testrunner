@@ -11,9 +11,9 @@ object TestFramework {
     def testFramework(project: MavenProject): Option[TestFramework] = {
         // Not sure why we have to cast here, but with this, Scala can't seem to figure out that
         // we should get a list of dependencies
-        val deps = project.getDependencies.asScala
+        val artifacts = project.getArtifacts.asScala
 
-        if (deps.exists(dep => dep.getArtifactId == "junit")) {
+        if (artifacts.exists(artifact => artifact.getArtifactId == "junit")) {
             Option(JUnit)
         } else {
             Option.empty
