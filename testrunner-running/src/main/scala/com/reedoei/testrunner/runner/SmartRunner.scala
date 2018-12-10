@@ -1,11 +1,12 @@
 package com.reedoei.testrunner.runner
 
+import java.nio.file.Path
+import java.util
 import java.util.concurrent.TimeUnit
 
 import com.reedoei.testrunner.data.framework.TestFramework
 import com.reedoei.testrunner.data.results.TestRunResult
 import com.reedoei.testrunner.util.{ExecutionInfo, ExecutionInfoBuilder}
-import org.apache.maven.project.MavenProject
 
 import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
@@ -17,12 +18,11 @@ import scala.util.{Failure, Success, Try}
   *
   * Concurrency safe (if the underlying test suite can run concurrently)
   */
-class SmartRunner(mavenProject: MavenProject, testFramework: TestFramework, infoStore: TestInfoStore) extends Runner {
+class SmartRunner(testFramework: TestFramework, infoStore: TestInfoStore,
+                  cp: String, env: java.util.Map[String, String], outputTo: Path) extends Runner {
     // TODO: Add ability to save/load test info
 
     override def framework(): TestFramework = testFramework
-
-    override def project(): MavenProject = mavenProject
 
     override def run(testOrder: Stream[String]): Try[TestRunResult] = {
         val result = super.run(testOrder)
@@ -46,9 +46,14 @@ class SmartRunner(mavenProject: MavenProject, testFramework: TestFramework, info
     def timeoutFor(testOrder: Stream[String]): Long = infoStore.getTimeout(testOrder.toList.asJava)
 
     def info(): TestInfoStore = infoStore
+
+    override def environment(): util.Map[String, String] = env
+    override def classpath(): String = cp
+    override def outputPath(): Path = outputTo
 }
 
 object SmartRunner extends RunnerProvider[SmartRunner] {
-    override def withFramework(project: MavenProject, framework: TestFramework): SmartRunner =
-        new SmartRunner(project, framework, new TestInfoStore)
+    override def withFramework(framework: TestFramework, classpath: String,
+                               environment: util.Map[String, String], outputPath: Path): SmartRunner =
+        new SmartRunner(framework, new TestInfoStore, classpath, environment, outputPath)
 }

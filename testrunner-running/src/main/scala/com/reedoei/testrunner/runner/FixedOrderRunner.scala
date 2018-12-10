@@ -1,19 +1,24 @@
 package com.reedoei.testrunner.runner
 
+import java.nio.file.Path
+import java.util
+
 import com.reedoei.testrunner.data.framework.TestFramework
 import com.reedoei.testrunner.util.{ExecutionInfo, ExecutionInfoBuilder}
-import org.apache.maven.project.MavenProject
 
-class FixedOrderRunner(mavenProject: MavenProject, testFramework: TestFramework) extends Runner {
+class FixedOrderRunner(testFramework: TestFramework, cp: String,
+                       env: java.util.Map[String, String], outputTo: Path) extends Runner {
     override def execution(testOrder: Stream[String], executionInfoBuilder: ExecutionInfoBuilder): ExecutionInfo =
         executionInfoBuilder.build()
 
     override def framework(): TestFramework = testFramework
-
-    override def project(): MavenProject = mavenProject
+    override def outputPath(): Path = outputTo
+    override def classpath(): String = cp
+    override def environment(): util.Map[String, String] = env
 }
 
 object FixedOrderRunner extends RunnerProvider[FixedOrderRunner] {
-    override def withFramework(project: MavenProject, framework: TestFramework): FixedOrderRunner =
-        new FixedOrderRunner(project, framework)
+    override def withFramework(framework: TestFramework, classpath: String,
+                               environment: util.Map[String, String], outputPath: Path): FixedOrderRunner =
+        new FixedOrderRunner(framework, classpath, environment, outputPath)
 }
