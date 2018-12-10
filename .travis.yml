@@ -15,7 +15,8 @@ before_install:
     - echo 'export PATH=${M2_HOME}/bin:${PATH}' >> ~/.bashrc
     - source ~/.bashrc
 
-install: true
+install:
+    - $HOME/apache-maven/mvn clean install
 
 script:
     - $HOME/apache-maven/mvn clean install
