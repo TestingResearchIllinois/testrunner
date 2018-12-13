@@ -56,7 +56,6 @@
             <version>2.22.0</version>
         </dependency>
 
-        <!-- Test -->
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>

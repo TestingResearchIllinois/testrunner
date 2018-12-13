@@ -34,7 +34,8 @@ object Executor {
 
         if (result.isFailure) {
             result.failed.get.printStackTrace(System.err)
-            2
+            2 // use 2 so that it's different than in the case statement in main() so we can tell
+              // what kind of error we got
         } else {
             0
         }

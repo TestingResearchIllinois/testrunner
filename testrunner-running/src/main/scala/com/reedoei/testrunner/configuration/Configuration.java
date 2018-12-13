@@ -1,6 +1,7 @@
 package com.reedoei.testrunner.configuration;
 
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
@@ -10,7 +11,7 @@ import java.util.Properties;
 
 public class Configuration {
     public static Configuration reloadConfig(final Path path) throws IOException {
-        return config = new Configuration(path);
+        return config = new Configuration(path).loadProperties();
     }
 
     private static final Path CONFIG_PATH = Paths.get("testplugin.properties");
@@ -23,16 +24,30 @@ public class Configuration {
 
     private final Properties properties = new Properties();
     private final Path configPath;
+    private boolean loaded = false;
 
     public Configuration(final Path configPath) {
         this.configPath = configPath;
     }
 
     public Configuration loadProperties() throws IOException {
-        return loadProperties(configPath);
+        if (!loaded) {
+            loaded = true;
+            return loadProperties(configPath);
+        } else {
+            return this;
+        }
     }
 
     public Properties properties() {
+        if (!loaded) {
+            try {
+                loadProperties();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
         return properties;
     }
 
@@ -46,10 +61,10 @@ public class Configuration {
         }
     }
 
-    private Configuration loadProperties(final Path path) throws IOException {
+    private Configuration loadProperties(final Path path) {
         try (final InputStream fileStream = new FileInputStream(path.toFile())) {
             properties.load(fileStream);
-        }
+        } catch (IOException ignored) { }
 
         return this;
     }
@@ -58,9 +73,7 @@ public class Configuration {
         if (properties().getProperty(s) == null) {
             try {
                 loadProperties();
-            } catch (IOException e) {
-                properties().setProperty(s, def);
-            }
+            } catch (IOException ignored) {}
         }
 
         return properties().getProperty(s, def);
