@@ -1,7 +1,7 @@
 package com.reedoei.testrunner.runner
 
 import java.io.File
-import java.nio.file.{Files, Path, Paths}
+import java.nio.file.{Files, Path, Paths, StandardCopyOption}
 import java.util.UUID
 
 import com.google.gson.Gson
@@ -66,9 +66,8 @@ trait Runner {
                     Try(new Gson().fromJson(reader, classOf[TestRunResult])))
             } else {
                 // Try to copy the output log so that it can be inspected
-                val failureLog = outputPath.resolve("failing-test-output-" + testRunId)
-                Files.deleteIfExists(failureLog)
-                Files.copy(info.outputPath, failureLog)
+                val failureLog = outputPath.getParent.resolve("failing-test-output-" + testRunId)
+                Files.copy(info.outputPath, failureLog, StandardCopyOption.REPLACE_EXISTING)
                 Failure(new Exception("Non-zero exit code (output in " + failureLog.toAbsolutePath + "): " ++ exitCode.toString))
             }
         }))).flatten.flatten.flatten.flatten
