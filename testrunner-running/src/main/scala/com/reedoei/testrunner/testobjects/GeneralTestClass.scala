@@ -16,18 +16,22 @@ object GeneralTestClass {
         val testAnnotation: Class[_ <: Annotation] =
             loader.loadClass("org.junit.Test").asInstanceOf[Class[_ <: Annotation]]
 
-        val clz = loader.loadClass(clzName)
+        try {
+            val clz = loader.loadClass(clzName)
 
-        if (!Modifier.isAbstract(clz.getModifiers)) {
-            val methods = clz.getMethods.toStream
+            if (!Modifier.isAbstract(clz.getModifiers)) {
+                val methods = clz.getMethods.toStream
 
-            Try(if (methods.exists(_.getAnnotation(testAnnotation) != null)) {
-                Option(new JUnitTestClass(loader, clz))
+                Try(if (methods.exists(_.getAnnotation(testAnnotation) != null)) {
+                    Option(new JUnitTestClass(loader, clz))
+                } else {
+                    Option.empty
+                }).toOption.flatten
             } else {
                 Option.empty
-            }).toOption.flatten
-        } else {
-            Option.empty
+            }
+        } catch {
+            case e: NoClassDefFoundError => Option.empty
         }
     }
 }
