@@ -3,7 +3,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.reedoei</groupId>
+    <groupId>edu.illinois.cs</groupId>
     <artifactId>testrunner</artifactId>
     <version>0.1-SNAPSHOT</version>
 
@@ -37,8 +37,8 @@
     </licenses>
 
     <scm>
-        <connection>scm:git:https://github.com/ReedOei/testrunner-maven-plugin.git</connection>
-        <developerConnection>scm:git:https://github.com/ReedOei/testrunner-maven-plugin.git</developerConnection>
+        <connection>scm:git:https://github.com/TestingResearchIllinois/testrunner-maven-plugin.git</connection>
+        <developerConnection>scm:git:https://github.com/TestingResearchIllinois/testrunner-maven-plugin.git</developerConnection>
         <url>https://github.com/ReedOei/testrunner-maven-plugin.git</url>
     </scm>
 
