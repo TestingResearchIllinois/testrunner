@@ -19,4 +19,8 @@ object TestFramework {
             Option.empty
         }
     }
+
+    def junitTestFramework(): Option[TestFramework] = {
+        Option(JUnit)
+    }
 }
