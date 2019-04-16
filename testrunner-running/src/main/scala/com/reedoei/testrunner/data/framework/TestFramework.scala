@@ -20,7 +20,7 @@ object TestFramework {
         }
     }
 
-    def junitTestFramework(): Option[TestFramework] = {
-        Option(JUnit)
+    def junitTestFramework(): TestFramework = {
+        JUnit
     }
 }
