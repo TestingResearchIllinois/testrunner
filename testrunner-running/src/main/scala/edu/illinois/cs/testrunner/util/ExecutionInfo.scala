@@ -5,7 +5,7 @@ import java.nio.file.Path
 import java.util.Objects
 import java.util.concurrent.TimeUnit
 
-import com.reedoei.testrunner.configuration.Configuration
+import edu.illinois.cs.testrunner.configuration.Configuration
 
 case class ExecutionInfo(classpath: String, javaAgent: Option[Path],
                          javaOpts: List[String],
