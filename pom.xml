@@ -5,7 +5,7 @@
 
     <groupId>edu.illinois.cs</groupId>
     <artifactId>testrunner</artifactId>
-    <version>0.1-SNAPSHOT</version>
+    <version>1.1-SNAPSHOT</version>
 
     <modules>
         <module>testrunner-maven-plugin</module>
