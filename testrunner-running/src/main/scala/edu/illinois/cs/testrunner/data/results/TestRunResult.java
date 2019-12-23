@@ -1,7 +1,6 @@
 package edu.illinois.cs.testrunner.data.results;
 
 import com.google.gson.Gson;
-import edu.illinois.cs.dt.tools.diagnosis.DiffContainer;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -16,20 +15,17 @@ import java.util.UUID;
 
 public class TestRunResult {
     public static TestRunResult empty(final String id) {
-        return new TestRunResult(id, new ArrayList<>(), new HashMap<>(), new HashMap<>());
+        return new TestRunResult(id, new ArrayList<>(), new HashMap<>());
     }
 
     private final String id;
     private final List<String> testOrder;
     private final Map<String, TestResult> results;
-    private final Map<String, DiffContainer> diffs;
 
-    public TestRunResult(final String id, final List<String> testOrder,
-                         final Map<String, TestResult> results, final Map<String, DiffContainer> diffs) {
+    public TestRunResult(final String id, final List<String> testOrder, final Map<String, TestResult> results) {
         this.id = id;
         this.testOrder = testOrder;
         this.results = results;
-        this.diffs = diffs;
     }
 
     public String id() {
@@ -42,10 +38,6 @@ public class TestRunResult {
 
     public Map<String, TestResult> results() {
         return results;
-    }
-
-    public Map<String, DiffContainer> diffs() {
-        return diffs;
     }
 
     private PrintStream outputStream(final String outputPath) throws IOException {

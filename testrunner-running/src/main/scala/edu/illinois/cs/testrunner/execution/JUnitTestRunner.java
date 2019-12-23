@@ -1,7 +1,5 @@
 package edu.illinois.cs.testrunner.execution;
 
-import edu.illinois.cs.dt.tools.diagnosis.DiffContainer;
-import edu.illinois.cs.dt.tools.diagnosis.StateDiff;
 import edu.illinois.cs.testrunner.configuration.Configuration;
 
 import org.junit.After;
@@ -61,7 +59,6 @@ public class JUnitTestRunner extends BlockJUnit4ClassRunner {
 
     private final Set<String> ranBeforeClassSet = new HashSet<>();
     private final List<JUnitTest> tests = new ArrayList<>();
-    private final Map<String, DiffContainer> stateDiffs = new HashMap<>();
 
     private RunNotifier notifier = null;
 
@@ -69,10 +66,6 @@ public class JUnitTestRunner extends BlockJUnit4ClassRunner {
         // Necessary so we can use all of the JUnit runner code written for BlockJUnit4ClassRunner.
         super(DummyClass.class);
         this.tests.addAll(tests);
-    }
-
-    public Map<String, DiffContainer> getStateDiffs() {
-        return stateDiffs;
     }
 
     @Override
@@ -327,11 +320,7 @@ public class JUnitTestRunner extends BlockJUnit4ClassRunner {
                             beforeClasses(test).evaluate();
                         }
 
-                        if (Configuration.config().getProperty("testplugin.runner.capture_state", false)) {
-                            stateDiffs.put(test.name(), new StateDiff(test.name()).diff(statement));
-                        } else {
-                            statement.evaluate();
-                        }
+                        statement.evaluate();
 
                         if (isLastMethod(method)) {
                             // Run this way so it doesn't show up in the stack trace for the test and possibly cause the tools

@@ -1,14 +1,9 @@
 package edu.illinois.cs.testrunner.execution;
 
-import com.thoughtworks.xstream.XStream;
-import com.thoughtworks.xstream.io.xml.DomDriver;
-import com.thoughtworks.xstream.security.AnyTypePermission;
-import edu.illinois.cs.dt.tools.diagnosis.DiffContainer;
 import edu.illinois.cs.testrunner.configuration.Configuration;
 import edu.illinois.cs.testrunner.data.results.TestResult;
 import edu.illinois.cs.testrunner.data.results.TestResultFactory;
 import edu.illinois.cs.testrunner.data.results.TestRunResult;
-import edu.illinois.diaper.StateCapture;
 import org.junit.runner.JUnitCore;
 import org.junit.runner.Result;
 import org.junit.runner.notification.Failure;
@@ -221,62 +216,6 @@ public class JUnitTestExecutor {
         return results;
     }
 
-    /**
-     * This is the method that calls XStream to serialize the state map into a string.
-     *
-     * @param  state  the string to object map representing the roots of the state
-     * @return        string representing the serialized input state
-     */
-    private String serializeRoots(Map<String, DiffContainer> state) {
-        XStream xstream = getXStreamInstance();
-        String s = "";
-        try {
-            s = xstream.toXML(state);
-            s = StateCapture.sanitizeXmlChars(s);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return s;
-    }
-
-    private XStream getXStreamInstance() {
-        XStream xstream = new XStream(new DomDriver());
-        XStream.setupDefaultSecurity(xstream);
-        xstream.addPermission(AnyTypePermission.ANY);
-        xstream.setMode(XStream.XPATH_ABSOLUTE_REFERENCES);
-        // Set fields to be omitted during serialization
-        xstream.omitField(java.lang.ref.SoftReference.class, "timestamp");
-        xstream.omitField(java.lang.ref.SoftReference.class, "referent");
-        xstream.omitField(java.lang.ref.Reference.class, "referent");
-
-        /*
-        String ignores[][] = new String[][] {
-            {"com.squareup.wire.Wire", "messageAdapters"},
-            {"com.squareup.wire.Wire", "builderAdapters"},
-            {"com.squareup.wire.Wire", "enumAdapters"},
-            {"org.apache.http.impl.conn.CPool", "COUNTER"},
-            {"org.apache.http.impl.conn.ManagedHttpClientConnectionFactory", "COUNTER"},
-            {"org.apache.http.localserver.LocalTestServer", "TEST_SERVER_ADDR"},
-            {"org.apache.http.impl.auth.NTLMEngineImpl", "RND_GEN"}};
-        */
-
-        for (String ignore : StateCapture.ignores) {
-            int lastDot = ignore.lastIndexOf(".");
-            String clz = ignore.substring(0,lastDot);
-            String fld = ignore.substring(lastDot+1);
-            try {
-                xstream.omitField(Class.forName(clz), fld);
-            } catch (Exception ex) {
-                //ex.printStackTrace();
-                //Do not throw runtime exception, since some modules might indeed not
-                //load all classes in the project.
-                //throw new RuntimeException(ex);
-            }
-        }
-
-        return xstream;
-    }
-
     private TestRunResult execute(final String testRunId, final JUnitTestRunner runner) {
         final PrintStream currOut = System.out;
         final PrintStream currErr = System.err;
@@ -290,14 +229,6 @@ public class JUnitTestExecutor {
         core.addListener(listener);
         final Result re;
         re = core.run(runner);
-
-        if (Configuration.config().getProperty("testplugin.runner.capture_state", false)) {
-            try {
-                Files.write(Paths.get("state-diff.xml"), serializeRoots(runner.getStateDiffs()).getBytes());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
 
 //        System.setOut(currOut);
 //        System.setErr(currErr);
@@ -341,7 +272,7 @@ public class JUnitTestExecutor {
             final List<String> testOrderNames =
                     testOrder.stream().map(JUnitTest::name).collect(Collectors.toList());
 
-            return Optional.of(new TestRunResult(testRunId, testOrderNames, results.results(), runner.getStateDiffs()));
+            return Optional.of(new TestRunResult(testRunId, testOrderNames, results.results()));
         } catch (InitializationError initializationError) {
             initializationError.printStackTrace();
         }
@@ -356,7 +287,6 @@ public class JUnitTestExecutor {
             final TestRunResult testResult = execute(testRunId, Collections.singletonList(test));
 
             results.results().putAll(testResult.results());
-            results.diffs().putAll(testResult.diffs());
         }
 
         return results;
