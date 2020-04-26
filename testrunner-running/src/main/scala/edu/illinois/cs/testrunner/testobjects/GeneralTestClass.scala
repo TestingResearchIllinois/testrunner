@@ -24,6 +24,8 @@ object GeneralTestClass {
 
                 Try(if (methods.exists(_.getAnnotation(testAnnotation) != null)) {
                     Option(new JUnitTestClass(loader, clz))
+                } else if (loader.loadClass("junit.framework.TestCase").isAssignableFrom(clz)) {
+                    Option(new JUnitTestCaseClass(loader, clz))
                 } else {
                     Option.empty
                 }).toOption.flatten
