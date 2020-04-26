@@ -31,11 +31,13 @@ class SmartRunner(testFramework: TestFramework, infoStore: TestInfoStore,
 
         // Make sure that we run exactly the set of tests that we intended to
         result.flatMap(result => {
-            if (result.results().keySet().asScala.toSet == testOrder.toSet) {
+            val resultSet = result.results().keySet().asScala.toSet
+            val testSet = testOrder.toSet
+            if (testSet.subsetOf(resultSet) ){
                 Success(result)
             } else {
                 Failure(new RuntimeException("Set of executed tests is not equal to test list that should have been executed (" +
-                    result.results().size() + " tests executed, " + testOrder.length + " tests expected)"))
+                    result.results().size() + " tests executed, " + testOrder.length + " tests expected). Missing tests are: " + testSet.diff(resultSet)))
             }
         })
     }
