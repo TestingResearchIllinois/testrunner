@@ -5,19 +5,29 @@ import edu.illinois.cs.testrunner.util.MavenClassLoader;
 
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
-import scala.Option;
 
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import scala.Option;
 
 public class RunnerFactory {
     public static Option<Runner> from(final MavenProject project) {
         return TestFramework.testFramework(project)
                 .map(framework -> create(framework, new MavenClassLoader(project).classpath(),
                         surefireEnvironment(project), project.getBasedir().toPath()));
+    }
+
+    public static List<Runner> allFrom(final MavenProject project) {
+        return TestFramework.getListOfFrameworks(project).stream()
+                .map(framework ->
+                        create(framework, new MavenClassLoader(project).classpath(),
+                               surefireEnvironment(project), project.getBasedir().toPath()))
+                .collect(Collectors.toList());
     }
 
     public static Runner create(final TestFramework framework, final String classpath,
