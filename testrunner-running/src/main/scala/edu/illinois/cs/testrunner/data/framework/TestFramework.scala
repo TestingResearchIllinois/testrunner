@@ -14,12 +14,24 @@ import scala.util.Try
 
 object TestFramework {
     def testFramework(project: MavenProject): Option[TestFramework] = {
+        // This method returns either JUnit 4 or JUnit 5 framework.
+        // If the project contains both JUnit 4 and JUnit 5 tests, return Option.empty
+        // Please use getListOfFrameworks for project mixes JUnit 4 and 5 tests
+
         // Not sure why we have to cast here, but with this, Scala can't seem to figure out that
         // we should get a list of dependencies
         val artifacts = project.getArtifacts.asScala
 
-        if (artifacts.exists(artifact => artifact.getArtifactId == "junit")) {
+        val containJUnit4Dependency = artifacts.exists(artifact => artifact.getArtifactId == "junit")
+        val containJUnit5Dependency = artifacts.exists(artifact => artifact.getArtifactId == "junit-jupiter") ||
+                                      artifacts.exists(artifact => artifact.getArtifactId == "junit-jupiter-api")
+
+        if (containJUnit4Dependency && containJUnit5Dependency) {
+            Option.empty
+        } else if (containJUnit4Dependency) {
             Option(JUnit)
+        } else if (containJUnit5Dependency) {
+            Option(JUnit5)
         } else {
             Option.empty
         }
@@ -51,7 +63,7 @@ trait TestFramework {
     // return corresponding subclass of GeneralTestClass if the class matches with the framework
     def tryGenerateTestClass(loader: ClassLoader, clzName: String): Option[GeneralTestClass]
 
-    def getSplitor(): String
+    def getDelimiter(): String
 }
 
 object JUnit extends TestFramework {
@@ -88,7 +100,7 @@ object JUnit extends TestFramework {
     // the splitor to split the class name and method name
     // for the full qualified name of JUnit 4 test
     // like com.package.JUnit4TestClass.TestA
-    override def getSplitor(): String = "."
+    override def getDelimiter(): String = "."
 }
 
 object JUnit5 extends TestFramework {
@@ -123,5 +135,5 @@ object JUnit5 extends TestFramework {
     // the splitor to split the class name and method name
     // for the full qualified name of JUnit 5 test
     // like com.package.JUnit5TestClass#TestA
-    override def getSplitor(): String = "#"
+    override def getDelimiter(): String = "#"
 }
