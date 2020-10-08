@@ -5,12 +5,16 @@ import java.nio.file.Path
 import java.util.Objects
 import java.util.concurrent.TimeUnit
 
+import edu.illinois.cs.testrunner.configuration.Configuration
+
 case class ExecutionInfo(classpath: String, javaAgent: Option[Path],
                          javaOpts: List[String],
                          properties: List[(String, String)],
                          environmentVariables: java.util.Map[String, String],
                          clz: Class[_], outputPath: Path,
                          timeout: Long, timeoutUnit: TimeUnit) {
+    val useTimeouts: Boolean = Configuration.config.getProperty("testplugin.runner.use_timeout", true)
+
     /**
       * This is an ugly workaround for Scala objects, whose class names end with $ despite the static main method
       * being in the companion class without the $ (
@@ -56,7 +60,7 @@ case class ExecutionInfo(classpath: String, javaAgent: Option[Path],
             new StreamGobbler(process.getErrorStream, ps).start()
         }
 
-        if (timeout > 0) {
+        if (timeout > 0 && useTimeouts) {
             val b = process.waitFor(timeout, timeoutUnit)
             if (b) process.exitValue() else -1
         } else {

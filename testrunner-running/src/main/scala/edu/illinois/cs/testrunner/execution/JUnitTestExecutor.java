@@ -1,16 +1,14 @@
 package edu.illinois.cs.testrunner.execution;
 
-import com.thoughtworks.xstream.XStream;
-import com.thoughtworks.xstream.io.xml.DomDriver;
-import com.thoughtworks.xstream.security.AnyTypePermission;
-import edu.illinois.cs.dt.tools.diagnosis.DiffContainer;
 import edu.illinois.cs.testrunner.configuration.Configuration;
 import edu.illinois.cs.testrunner.data.results.TestResult;
 import edu.illinois.cs.testrunner.data.results.TestResultFactory;
 import edu.illinois.cs.testrunner.data.results.TestRunResult;
-import edu.illinois.diaper.StateCapture;
+import org.junit.runner.Description;
 import org.junit.runner.JUnitCore;
+import org.junit.runner.Request;
 import org.junit.runner.Result;
+import org.junit.runner.manipulation.Filter;
 import org.junit.runner.notification.Failure;
 import org.junit.runners.model.InitializationError;
 
@@ -20,6 +18,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -221,92 +220,64 @@ public class JUnitTestExecutor {
         return results;
     }
 
-    /**
-     * This is the method that calls XStream to serialize the state map into a string.
-     *
-     * @param  state  the string to object map representing the roots of the state
-     * @return        string representing the serialized input state
-     */
-    private String serializeRoots(Map<String, DiffContainer> state) {
-        XStream xstream = getXStreamInstance();
-        String s = "";
-        try {
-            s = xstream.toXML(state);
-            s = StateCapture.sanitizeXmlChars(s);
-        } catch (Exception e) {
-            e.printStackTrace();
+    private TestRunResult execute(final String testRunId, final List<JUnitTest> tests) {
+        // This will happen only if no tests are selected by the filter.
+        // In this case, we will throw an exception with a name that makes sense.
+        if (tests.isEmpty()) {
+            throw new EmptyTestListException(testOrder);
         }
-        return s;
-    }
-
-    private XStream getXStreamInstance() {
-        XStream xstream = new XStream(new DomDriver());
-        XStream.setupDefaultSecurity(xstream);
-        xstream.addPermission(AnyTypePermission.ANY);
-        xstream.setMode(XStream.XPATH_ABSOLUTE_REFERENCES);
-        // Set fields to be omitted during serialization
-        xstream.omitField(java.lang.ref.SoftReference.class, "timestamp");
-        xstream.omitField(java.lang.ref.SoftReference.class, "referent");
-        xstream.omitField(java.lang.ref.Reference.class, "referent");
-
-        /*
-        String ignores[][] = new String[][] {
-            {"com.squareup.wire.Wire", "messageAdapters"},
-            {"com.squareup.wire.Wire", "builderAdapters"},
-            {"com.squareup.wire.Wire", "enumAdapters"},
-            {"org.apache.http.impl.conn.CPool", "COUNTER"},
-            {"org.apache.http.impl.conn.ManagedHttpClientConnectionFactory", "COUNTER"},
-            {"org.apache.http.localserver.LocalTestServer", "TEST_SERVER_ADDR"},
-            {"org.apache.http.impl.auth.NTLMEngineImpl", "RND_GEN"}};
-        */
-
-        for (String ignore : StateCapture.ignores) {
-            int lastDot = ignore.lastIndexOf(".");
-            String clz = ignore.substring(0,lastDot);
-            String fld = ignore.substring(lastDot+1);
-            try {
-                xstream.omitField(Class.forName(clz), fld);
-            } catch (Exception ex) {
-                //ex.printStackTrace();
-                //Do not throw runtime exception, since some modules might indeed not
-                //load all classes in the project.
-                //throw new RuntimeException(ex);
-            }
-        }
-
-        return xstream;
-    }
-
-    private TestRunResult execute(final String testRunId, final JUnitTestRunner runner) {
-        final PrintStream currOut = System.out;
-        final PrintStream currErr = System.err;
-
-//        System.setOut(EMPTY_STREAM);
-//        System.setErr(EMPTY_STREAM);
 
         final JUnitCore core = new JUnitCore();
 
         final TestListener listener = new TestListener();
         core.addListener(listener);
         final Result re;
-        re = core.run(runner);
 
-        if (Configuration.config().getProperty("testplugin.runner.capture_state", false)) {
-            try {
-                Files.write(Paths.get("state-diff.xml"), serializeRoots(runner.getStateDiffs()).getBytes());
-            } catch (IOException e) {
-                e.printStackTrace();
+        // Keep track of what test classes and test descriptions, for use in constructing Request
+        final List<Class> classes = new ArrayList<>();
+        final List<Description> descs = new ArrayList<>();
+        for (JUnitTest test : tests) {
+            if (!classes.contains(test.javaClass())) {
+                classes.add(test.javaClass());
             }
+            descs.add(test.description());
         }
+        // Construct the request that filters out only tests we need and sorts in specified order
+        re = core.run(Request.classes(classes.toArray(new Class[0])).
+                      // Filter to only include passed in tests
+                      filterWith(new Filter() {
+                              @Override
+                              public boolean shouldRun(Description description) {
+                                  if (description.isTest()) {
+                                      return descs.contains(description);
+                                  }
 
-//        System.setOut(currOut);
-//        System.setErr(currErr);
+                                  for (Description each : description.getChildren()) {
+                                      if (shouldRun(each)) {
+                                          return true;
+                                      }
+                                  }
+                                  return false;
+                              }
 
-        final Set<TestResult> results = results(re, runner.tests(), listener);
+                              @Override
+                              public String describe() {
+                                  return "Filter by list";
+                              }
+                          }).
+                      // Sort to run based on passed in tests
+                      sortWith(new Comparator<Description>() {
+                              @Override
+                              public int compare(Description d1, Description d2) {
+                                  return descs.indexOf(d1) - descs.indexOf(d2);
+                              }
+                          }));
+
+        final Set<TestResult> results = results(re, tests, listener);
 
         final TestRunResult finalResult = TestRunResult.empty(testRunId);
 
-        for (final JUnitTest test : runner.tests()) {
+        for (final JUnitTest test : tests) {
             finalResult.testOrder().add(test.name());
         }
 
@@ -317,36 +288,15 @@ public class JUnitTestExecutor {
         return finalResult;
     }
 
-    private TestRunResult execute(final String testRunId, final List<JUnitTest> tests) {
-        // This will happen only if no tests are selected by the filter.
-        // In this case, we will throw an exception with a name that makes sense.
-        if (tests.isEmpty()) {
-            throw new EmptyTestListException(testOrder);
-        }
-
-        try {
-            return execute(testRunId, new JUnitTestRunner(tests));
-        } catch (InitializationError initializationError) {
-            initializationError.printStackTrace();
-        }
-
-        return TestRunResult.empty(testRunId);
-    }
 
     public Optional<TestRunResult> execute(final String testRunId) {
-        try {
-            final JUnitTestRunner runner = new JUnitTestRunner(testOrder);
-            final TestRunResult results = execute(testRunId, runner);
+        final TestRunResult results = execute(testRunId, testOrder);
 
-            final List<String> testOrderNames =
-                    testOrder.stream().map(JUnitTest::name).collect(Collectors.toList());
+        final List<String> testOrderNames =
+                testOrder.stream().map(JUnitTest::name).collect(Collectors.toList());
 
-            return Optional.of(new TestRunResult(testRunId, testOrderNames, results.results(), runner.getStateDiffs()));
-        } catch (InitializationError initializationError) {
-            initializationError.printStackTrace();
-        }
+        return Optional.of(new TestRunResult(testRunId, testOrderNames, results.results()));
 
-        return Optional.empty();
     }
 
     public TestRunResult executeSeparately(final String testRunId) {
@@ -356,7 +306,6 @@ public class JUnitTestExecutor {
             final TestRunResult testResult = execute(testRunId, Collections.singletonList(test));
 
             results.results().putAll(testResult.results());
-            results.diffs().putAll(testResult.diffs());
         }
 
         return results;
