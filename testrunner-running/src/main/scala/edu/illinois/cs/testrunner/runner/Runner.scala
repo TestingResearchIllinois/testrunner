@@ -59,7 +59,7 @@ trait Runner {
                     framework().toString,
                     path.toAbsolutePath.toString,
                     propertiesPath.toAbsolutePath.toString,
-                    outputPath.toAbsolutePath.toString).exitValue()
+                    outputPath.toAbsolutePath.toString)
 
             if (exitCode == 0) {
                 autoClose(Source.fromFile(outputPath.toAbsolutePath.toString).bufferedReader())(reader =>

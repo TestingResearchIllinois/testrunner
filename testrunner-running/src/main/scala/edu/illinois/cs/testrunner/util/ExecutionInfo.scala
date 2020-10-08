@@ -47,7 +47,7 @@ case class ExecutionInfo(classpath: String, javaAgent: Option[Path],
         builder
     }
 
-    def run(argVals: String*): Process = {
+    def run(argVals: String*): Integer = {
         val process = processBuilder(argVals:_*).start()
 
         if (outputPath != null) {
@@ -57,11 +57,10 @@ case class ExecutionInfo(classpath: String, javaAgent: Option[Path],
         }
 
         if (timeout > 0) {
-            process.waitFor(timeout, timeoutUnit)
+            val b = process.waitFor(timeout, timeoutUnit)
+            if (b) process.exitValue() else -1
         } else {
             process.waitFor()
         }
-
-        process
     }
 }
