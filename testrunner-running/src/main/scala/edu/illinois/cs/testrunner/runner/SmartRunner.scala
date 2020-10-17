@@ -4,6 +4,7 @@ import java.nio.file.Path
 import java.util
 import java.util.concurrent.TimeUnit
 
+import edu.illinois.cs.testrunner.configuration.Configuration
 import edu.illinois.cs.testrunner.data.framework.TestFramework
 import edu.illinois.cs.testrunner.data.results.TestRunResult
 import edu.illinois.cs.testrunner.util.{ExecutionInfo, ExecutionInfoBuilder}
@@ -28,16 +29,19 @@ class SmartRunner(testFramework: TestFramework, infoStore: TestInfoStore,
         val result = super.run(testOrder)
 
         this.synchronized(infoStore.update(testOrder.toList.asJava, result.toOption))
+	val idempotentNumRuns = Configuration.config().getProperty("testplugin.runner.idempotent.num.runs", -1)
+	val multiplier = if (idempotentNumRuns == -1) 1 else idempotentNumRuns
 
         // Make sure that we run exactly the set of tests that we intended to
         result.flatMap(result => {
             val resultSet = result.results().keySet().asScala.toSet
             val testSet = testOrder.toSet
-            if (testSet.subsetOf(resultSet) ){
+            if ((multiplier * testOrder.length) == result.results().size ){
                 Success(result)
             } else {
                 Failure(new RuntimeException("Set of executed tests is not equal to test list that should have been executed (" +
-                    result.results().size() + " tests executed, " + testOrder.length + " tests expected). Missing tests are: " + testSet.diff(resultSet)))
+                    result.results().size() + " tests executed, " + (multiplier * testOrder.length) +
+		    " tests expected). Did you use testplugin.runner.idempotent.num.runs? Missing tests are: " + testSet.diff(resultSet)))
             }
         })
     }
