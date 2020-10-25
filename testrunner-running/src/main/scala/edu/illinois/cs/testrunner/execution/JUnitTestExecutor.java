@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 
 public class JUnitTestExecutor {
     public static final int IDEMPOTENT_NUM_RUNS =
-	Configuration.config().getProperty("testplugin.runner.idempotent.num.runs", -1);
+        Configuration.config().getProperty("testplugin.runner.idempotent.num.runs", -1);
 
     public static TestRunResult runOrder(final String testRunId,
                                          final List<String> testList,
@@ -50,9 +50,9 @@ public class JUnitTestExecutor {
         }
     }
 
-	private final List<JUnitTest> testOrder = new ArrayList<>();
+    private final List<JUnitTest> testOrder = new ArrayList<>();
     private final Map<String, JUnitTest> testMap = new HashMap<>();
-	private final Set<TestResult> knownResults = new HashSet<>();
+    private final Set<TestResult> knownResults = new HashSet<>();
 
     public JUnitTestExecutor(final JUnitTest test) {
         this(Collections.singletonList(test));
@@ -245,51 +245,51 @@ public class JUnitTestExecutor {
             }
             descs.add(test.description());
         }
-	final TestRunResult finalResult = TestRunResult.empty(testRunId);
-	for (int i = 0; i < IDEMPOTENT_NUM_RUNS; i++) {
-	    // Construct the request that filters out only tests we need and sorts in specified order
-	    re = core.run(Request.classes(classes.toArray(new Class[0])).
-			  // Filter to only include passed in tests
-			  filterWith(new Filter() {
-				  @Override
-				  public boolean shouldRun(Description description) {
-				      if (description.isTest()) {
-					  return descs.contains(description);
-				      }
+        final TestRunResult finalResult = TestRunResult.empty(testRunId);
+        for (int i = 0; i < IDEMPOTENT_NUM_RUNS; i++) {
+            // Construct the request that filters out only tests we need and sorts in specified order
+            re = core.run(Request.classes(classes.toArray(new Class[0])).
+            // Filter to only include passed in tests
+            filterWith(new Filter() {
+                @Override
+                public boolean shouldRun(Description description) {
+                    if (description.isTest()) {
+                        return descs.contains(description);
+                    }
 
-				      for (Description each : description.getChildren()) {
-					  if (shouldRun(each)) {
-					      return true;
-					  }
-				      }
-				      return false;
-				  }
+                    for (Description each : description.getChildren()) {
+                        if (shouldRun(each)) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
 
-				  @Override
-				  public String describe() {
-				      return "Filter by list";
-				  }
-			      }).
-			  // Sort to run based on passed in tests
-			  sortWith(new Comparator<Description>() {
-				  @Override
-				  public int compare(Description d1, Description d2) {
-				      return descs.indexOf(d1) - descs.indexOf(d2);
-				  }
-			      }));
+                @Override
+                public String describe() {
+                    return "Filter by list";
+                }
+            }).
+            // Sort to run based on passed in tests
+            sortWith(new Comparator<Description>() {
+                @Override
+                public int compare(Description d1, Description d2) {
+                    return descs.indexOf(d1) - descs.indexOf(d2);
+                }
+            }));
 
-	    final Set<TestResult> results = results(re, tests, listener);
+            final Set<TestResult> results = results(re, tests, listener);
 
-	    for (final JUnitTest test : tests) {
-		String testName = (IDEMPOTENT_NUM_RUNS != -1) ? (test.name() + ":" + i) : test.name();
-		finalResult.testOrder().add(testName);
-	    }
+            for (final JUnitTest test : tests) {
+                String testName = (IDEMPOTENT_NUM_RUNS != -1) ? (test.name() + ":" + i) : test.name();
+                finalResult.testOrder().add(testName);
+            }
 
-	    for (final TestResult result : results) {
-		String testName = (IDEMPOTENT_NUM_RUNS != -1) ? (result.name() + ":" + i) : result.name();
-		finalResult.results().put(testName, result);
-	    }
-	}
+            for (final TestResult result : results) {
+                String testName = (IDEMPOTENT_NUM_RUNS != -1) ? (result.name() + ":" + i) : result.name();
+                finalResult.results().put(testName, result);
+            }
+        }
         return finalResult;
     }
 
@@ -317,6 +317,6 @@ public class JUnitTestExecutor {
 
     public TestRunResult executeWithJUnit4Runner(final String testRunId) {
         return execute(testRunId, testOrder);
-	}
+    }
 
 }
