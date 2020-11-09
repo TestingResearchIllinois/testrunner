@@ -246,7 +246,15 @@ public class JUnitTestExecutor {
             descs.add(test.description());
         }
         final TestRunResult finalResult = TestRunResult.empty(testRunId);
-        for (int i = 0; i < IDEMPOTENT_NUM_RUNS; i++) {
+        int idempotentRuns = Math.max(1, IDEMPOTENT_NUM_RUNS);
+        int randomizeRuns = Configuration.config().getProperty("dt.randomize.rounds", -1);
+        if (idempotentRuns > 1 && randomizeRuns > 1) {
+            // iDFlakies encounters a NPE when verifying non-idempotent OD tests
+            throw new RuntimeException("dt.randomize.rounds is set to " + randomizeRuns +
+                                       " and testplugin.runner.idempotent.num.runs is set to " +
+                                       idempotentRuns + ". Either configuration must be <= 1.");
+        }
+        for (int i = 0; i < idempotentRuns; i++) {
             // Construct the request that filters out only tests we need and sorts in specified order
             re = core.run(Request.classes(classes.toArray(new Class[0])).
             // Filter to only include passed in tests
@@ -281,12 +289,12 @@ public class JUnitTestExecutor {
             final Set<TestResult> results = results(re, tests, listener);
 
             for (final JUnitTest test : tests) {
-                String testName = (IDEMPOTENT_NUM_RUNS != -1) ? (test.name() + ":" + i) : test.name();
+                String testName = (IDEMPOTENT_NUM_RUNS  > 1) ? (test.name() + ":" + i) : test.name();
                 finalResult.testOrder().add(testName);
             }
 
             for (final TestResult result : results) {
-                String testName = (IDEMPOTENT_NUM_RUNS != -1) ? (result.name() + ":" + i) : result.name();
+                String testName = (IDEMPOTENT_NUM_RUNS  > 1) ? (result.name() + ":" + i) : result.name();
                 finalResult.results().put(testName, result);
             }
         }

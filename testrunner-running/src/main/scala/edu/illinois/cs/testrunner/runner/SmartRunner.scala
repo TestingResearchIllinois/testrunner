@@ -29,8 +29,8 @@ class SmartRunner(testFramework: TestFramework, infoStore: TestInfoStore,
         val result = super.run(testOrder)
 
         this.synchronized(infoStore.update(testOrder.toList.asJava, result.toOption))
-	val idempotentNumRuns = Configuration.config().getProperty("testplugin.runner.idempotent.num.runs", -1)
-	val multiplier = if (idempotentNumRuns == -1) 1 else idempotentNumRuns
+        val idempotentNumRuns = Configuration.config().getProperty("testplugin.runner.idempotent.num.runs", -1)
+        val multiplier = if (idempotentNumRuns < 1) 1 else idempotentNumRuns
 
         // Make sure that we run exactly the set of tests that we intended to
         result.flatMap(result => {
