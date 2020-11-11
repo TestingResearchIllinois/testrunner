@@ -2,6 +2,7 @@ package edu.illinois.cs.testrunner.testobjects
 
 import java.nio.file.{Path, Paths}
 
+import edu.illinois.cs.testrunner.data.framework.TestFramework
 import edu.illinois.cs.testrunner.util.MavenClassLoader
 import org.apache.maven.plugin.surefire.util.DirectoryScanner
 import org.apache.maven.project.MavenProject
@@ -16,9 +17,9 @@ object TestLocator {
         new DirectoryScanner(testOutputPath(project).toFile, TestListResolver.getWildcard)
         .scan().getClasses.asScala.toStream
 
-    def tests(project: MavenProject): Stream[String] =
+    def tests(project: MavenProject, framework: TestFramework): Stream[String] =
         testClasses(project).flatMap(className =>
             GeneralTestClass
-                .create(new MavenClassLoader(project).loader, className)
+                .create(new MavenClassLoader(project).loader, className, framework)
                 .map(_.tests()).getOrElse(Stream.empty))
 }
