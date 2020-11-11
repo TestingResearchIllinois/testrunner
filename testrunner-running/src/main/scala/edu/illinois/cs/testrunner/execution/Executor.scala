@@ -28,7 +28,10 @@ object Executor {
         val result = Try(testFramework match {
             case "JUnit" =>
                 JUnitTestExecutor.runOrder(testRunId, tests, true, false)
-                    .writeTo(outputPath.toAbsolutePath.toString)
+                                 .writeTo(outputPath.toAbsolutePath.toString)
+            case "JUnit5" =>
+                JUnit5TestExecutor.runTestsSeparately(testRunId, tests)
+                                  .writeTo(outputPath.toAbsolutePath.toString)
             case _ => throw new Exception("Unknown test framework: " ++ testFramework)
         })
 
