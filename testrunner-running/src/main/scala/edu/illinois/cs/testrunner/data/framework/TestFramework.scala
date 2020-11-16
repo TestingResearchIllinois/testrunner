@@ -4,6 +4,7 @@ import edu.illinois.cs.testrunner.testobjects.GeneralTestClass
 import edu.illinois.cs.testrunner.testobjects.JUnitTestCaseClass
 import edu.illinois.cs.testrunner.testobjects.JUnitTestClass
 import edu.illinois.cs.testrunner.testobjects.JUnit5TestClass
+import edu.illinois.cs.testrunner.util.Utility
 import org.apache.maven.project.MavenProject
 import java.lang.annotation.Annotation
 import java.lang.reflect.Modifier
@@ -115,7 +116,7 @@ object JUnit5 extends TestFramework {
             val clz = loader.loadClass(clzName)
 
             if (!Modifier.isAbstract(clz.getModifiers)) {
-                val methods = clz.getMethods.toStream
+                val methods = Utility.getAllMethods(clz)
 
                 Try(if (methods.exists(_.getAnnotation(annotation) != null)) {
                     Option(new JUnit5TestClass(loader, clz))
