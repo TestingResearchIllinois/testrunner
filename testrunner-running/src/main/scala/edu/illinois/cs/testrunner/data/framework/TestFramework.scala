@@ -107,14 +107,23 @@ object JUnit extends TestFramework {
 object JUnit5 extends TestFramework {
     val methodAnnotationStr: String = "org.junit.jupiter.api.Test"
     val nestedAnnotationStr: String = "org.junit.jupiter.api.Nested"
+    val disabledAnnotationStr: String = "org.junit.jupiter.api.Disabled"
 
     override def tryGenerateTestClass(loader: ClassLoader, clzName: String)
             : Option[GeneralTestClass] = {
-        val annotation: Class[_ <: Annotation] =
+        val testAnnotation: Class[_ <: Annotation] =
             loader.loadClass(methodAnnotationStr).asInstanceOf[Class[_ <: Annotation]]
+
+        val disabledAnnotation: Class[_ <: Annotation] =
+            loader.loadClass(disabledAnnotationStr).asInstanceOf[Class[_ <: Annotation]]
 
         try {
             val clz = loader.loadClass(clzName)
+
+            if (clz.getAnnotation(disabledAnnotation) != null) {
+                // skip disabled class
+                return Option.empty
+            }
 
             if (clz.isMemberClass) {
                 val nestedAnnotation: Class[_ <: Annotation] =
@@ -134,7 +143,7 @@ object JUnit5 extends TestFramework {
             if (!Modifier.isAbstract(clz.getModifiers)) {
                 val methods = Utility.getAllMethods(clz)
 
-                Try(if (methods.exists(_.getAnnotation(annotation) != null)) {
+                Try(if (methods.exists(_.getAnnotation(testAnnotation) != null)) {
                     Option(new JUnit5TestClass(loader, clz))
                 } else {
                     Option.empty
