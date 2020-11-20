@@ -9,7 +9,7 @@ import scala.collection.JavaConverters._
 class JUnit5TestClass(loader: ClassLoader, clz: Class[_]) extends GeneralTestClass {
 
     def fullyQualifiedName(method: Method): String =
-        clz.getCanonicalName ++ "#" ++ method.getName
+        clz.getName ++ "#" ++ method.getName
 
     override def tests(): Stream[String] = {
         val junit5TestAnnotation: Class[_ <: Annotation] =

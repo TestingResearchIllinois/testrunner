@@ -10,7 +10,7 @@ class JUnitTestClass(loader: ClassLoader, clz: Class[_]) extends GeneralTestClas
     private def junitTestClass: TestClass = new TestClass(clz)
 
     def fullyQualifiedName(fm: FrameworkMethod): String =
-        clz.getCanonicalName ++ "." ++ fm.getName
+        clz.getName ++ "." ++ fm.getName
 
     override def tests(): Stream[String] = {
         val testAnnotation: Class[_ <: Annotation] =
