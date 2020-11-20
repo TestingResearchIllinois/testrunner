@@ -106,6 +106,7 @@ object JUnit extends TestFramework {
 
 object JUnit5 extends TestFramework {
     val methodAnnotationStr: String = "org.junit.jupiter.api.Test"
+    val nestedAnnotationStr: String = "org.junit.jupiter.api.Nested"
 
     override def tryGenerateTestClass(loader: ClassLoader, clzName: String)
             : Option[GeneralTestClass] = {
@@ -114,6 +115,21 @@ object JUnit5 extends TestFramework {
 
         try {
             val clz = loader.loadClass(clzName)
+
+            if (clz.isMemberClass) {
+                val nestedAnnotation: Class[_ <: Annotation] =
+                        loader.loadClass(nestedAnnotationStr)
+                              .asInstanceOf[Class[_ <: Annotation]]
+                if (Modifier.isStatic(clz.getModifiers) ||
+                        clz.getAnnotation(nestedAnnotation) == null) {
+                    // a nested test class should
+                    // (1) be non-static
+                    // (2) have @Nested annotation
+                    //
+                    // Skip unqualified test class
+                    return Option.empty
+                }
+            }
 
             if (!Modifier.isAbstract(clz.getModifiers)) {
                 val methods = Utility.getAllMethods(clz)
