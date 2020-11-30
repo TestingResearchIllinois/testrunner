@@ -4,6 +4,7 @@ import edu.illinois.cs.testrunner.testobjects.GeneralTestClass
 import edu.illinois.cs.testrunner.testobjects.JUnitTestCaseClass
 import edu.illinois.cs.testrunner.testobjects.JUnitTestClass
 import edu.illinois.cs.testrunner.testobjects.JUnit5TestClass
+import edu.illinois.cs.testrunner.util.Utility
 import org.apache.maven.project.MavenProject
 import java.lang.annotation.Annotation
 import java.lang.reflect.Modifier
@@ -105,19 +106,44 @@ object JUnit extends TestFramework {
 
 object JUnit5 extends TestFramework {
     val methodAnnotationStr: String = "org.junit.jupiter.api.Test"
+    val nestedAnnotationStr: String = "org.junit.jupiter.api.Nested"
+    val disabledAnnotationStr: String = "org.junit.jupiter.api.Disabled"
 
     override def tryGenerateTestClass(loader: ClassLoader, clzName: String)
             : Option[GeneralTestClass] = {
-        val annotation: Class[_ <: Annotation] =
+        val testAnnotation: Class[_ <: Annotation] =
             loader.loadClass(methodAnnotationStr).asInstanceOf[Class[_ <: Annotation]]
+
+        val disabledAnnotation: Class[_ <: Annotation] =
+            loader.loadClass(disabledAnnotationStr).asInstanceOf[Class[_ <: Annotation]]
 
         try {
             val clz = loader.loadClass(clzName)
 
-            if (!Modifier.isAbstract(clz.getModifiers)) {
-                val methods = clz.getMethods.toStream
+            if (clz.getAnnotation(disabledAnnotation) != null) {
+                // skip disabled class
+                return Option.empty
+            }
 
-                Try(if (methods.exists(_.getAnnotation(annotation) != null)) {
+            if (clz.isMemberClass) {
+                val nestedAnnotation: Class[_ <: Annotation] =
+                        loader.loadClass(nestedAnnotationStr)
+                              .asInstanceOf[Class[_ <: Annotation]]
+                if (Modifier.isStatic(clz.getModifiers) ||
+                        clz.getAnnotation(nestedAnnotation) == null) {
+                    // a nested test class should
+                    // (1) be non-static
+                    // (2) have @Nested annotation
+                    //
+                    // Skip unqualified test class
+                    return Option.empty
+                }
+            }
+
+            if (!Modifier.isAbstract(clz.getModifiers)) {
+                val methods = Utility.getAllMethods(clz)
+
+                Try(if (methods.exists(_.getAnnotation(testAnnotation) != null)) {
                     Option(new JUnit5TestClass(loader, clz))
                 } else {
                     Option.empty
