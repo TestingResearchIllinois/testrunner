@@ -7,7 +7,7 @@
     <parent>
         <groupId>edu.illinois.cs</groupId>
         <artifactId>testrunner</artifactId>
-        <version>1.1-SNAPSHOT</version>
+        <version>1.2-SNAPSHOT</version>
     </parent>
 
     <artifactId>testrunner-maven-plugin</artifactId>
