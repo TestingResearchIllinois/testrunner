@@ -1,4 +1,4 @@
-package edu.illinois.cs.testrunner.mavenplugin
+package edu.illinois.cs.testrunner.coreplugin
 
 import java.nio.file.{Files, Paths}
 

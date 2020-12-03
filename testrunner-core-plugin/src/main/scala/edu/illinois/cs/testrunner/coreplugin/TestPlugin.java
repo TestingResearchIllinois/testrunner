@@ -1,4 +1,4 @@
-package edu.illinois.cs.testrunner.mavenplugin;
+package edu.illinois.cs.testrunner.coreplugin;
 
 import org.apache.maven.project.MavenProject;
 
