@@ -10,29 +10,20 @@
         <version>1.2-SNAPSHOT</version>
     </parent>
 
-    <artifactId>testrunner-testing</artifactId>
+    <artifactId>testrunner-core-plugin</artifactId>
 
     <dependencies>
         <dependency>
+            <groupId>edu.illinois.cs</groupId>
+            <artifactId>testrunner-running</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-library</artifactId>
-        </dependency>
-        <!-- Test -->
-        <dependency>
-            <groupId>edu.illinois.cs</groupId>
-            <artifactId>testrunner-core-plugin</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.vintage</groupId>
-            <artifactId>junit-vintage-engine</artifactId>
-            <version>5.7.0</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.maven.plugin-testing</groupId>
-            <artifactId>maven-plugin-testing-harness</artifactId>
-            <scope>test</scope>
         </dependency>
     </dependencies>
 
@@ -57,6 +48,12 @@
 
         <plugins>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-plugin-plugin</artifactId>
+                <version>3.5.2</version>
+            </plugin>
+
+            <plugin>
                 <groupId>net.alchim31.maven</groupId>
                 <artifactId>scala-maven-plugin</artifactId>
                 <executions>
@@ -76,12 +73,6 @@
                         </goals>
                     </execution>
                 </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>edu.illinois.cs</groupId>
-                <artifactId>testrunner-maven-plugin</artifactId>
-                <version>${project.version}</version>
             </plugin>
 
             <plugin>

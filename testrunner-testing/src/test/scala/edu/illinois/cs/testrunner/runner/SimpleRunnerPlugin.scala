@@ -1,6 +1,6 @@
 package edu.illinois.cs.testrunner.runner
 
-import edu.illinois.cs.testrunner.mavenplugin.TestPlugin
+import edu.illinois.cs.testrunner.coreplugin.TestPlugin
 import org.apache.maven.project.MavenProject
 
 class SimpleRunnerPlugin extends TestPlugin {

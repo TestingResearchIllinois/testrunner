@@ -8,6 +8,7 @@
     <version>1.2-SNAPSHOT</version>
 
     <modules>
+        <module>testrunner-core-plugin</module>
         <module>testrunner-maven-plugin</module>
         <module>testrunner-running</module>
         <module>testrunner-testing</module>
@@ -79,6 +80,11 @@
             <dependency>
                 <groupId>edu.illinois.cs</groupId>
                 <artifactId>testrunner-running</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>edu.illinois.cs</groupId>
+                <artifactId>testrunner-core-plugin</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
