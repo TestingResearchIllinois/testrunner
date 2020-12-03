@@ -11,7 +11,7 @@ First, create a class that extends the following abstract class:
 public abstract class TestPlugin {
     public TestPlugin() {}
 
-    public abstract void execute(final MavenProject project);
+    public abstract void execute(final ProjectWrapper project);
 }
 ```
 

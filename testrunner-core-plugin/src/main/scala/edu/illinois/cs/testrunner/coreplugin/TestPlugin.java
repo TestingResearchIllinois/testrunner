@@ -1,9 +1,9 @@
 package edu.illinois.cs.testrunner.coreplugin;
 
-import org.apache.maven.project.MavenProject;
+import edu.illinois.cs.testrunner.util.ProjectWrapper;
 
 public abstract class TestPlugin {
     public TestPlugin() {}
 
-    public abstract void execute(final MavenProject project);
+    public abstract void execute(final ProjectWrapper project);
 }

@@ -5,6 +5,7 @@ import java.net.{URL, URLClassLoader}
 import java.nio.file.Paths
 import java.util.logging.Logger;
 
+import edu.illinois.cs.testrunner.util.ProjectWrapper;
 import edu.illinois.cs.testrunner.configuration.{ConfigProps, Configuration}
 import edu.illinois.cs.testrunner.coreplugin.TestPluginUtil
 import org.apache.maven.execution.MavenSession
@@ -73,9 +74,9 @@ class TestPluginPlugin extends AbstractMojo {
 //        println(configuredSurefire)
 
         TestPluginUtil.logger = Logger.getLogger(className)
-        TestPluginUtil.project = project
+        TestPluginUtil.project = new MavenProjectWrapper(project)
 
         val obj = clz.getConstructor().newInstance()
-        clz.getMethod("execute", classOf[MavenProject]).invoke(obj, project)
+        clz.getMethod("execute", classOf[ProjectWrapper]).invoke(obj, TestPluginUtil.project)
     }
 }

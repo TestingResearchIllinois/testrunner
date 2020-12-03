@@ -10,10 +10,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 
+import edu.illinois.cs.testrunner.util.ProjectWrapper;
 import edu.illinois.cs.testrunner.configuration.ConfigProps;
 import edu.illinois.cs.testrunner.configuration.Configuration;
-
-import org.apache.maven.project.MavenProject;
 
 public class TestPluginUtil {
     final public static String pluginName = "testplugin";
@@ -22,7 +21,7 @@ public class TestPluginUtil {
     private static List<URL> pluginCpURLs = null;
     private static String pluginCp = null;
     public static Logger logger;
-    public static MavenProject project;
+    public static ProjectWrapper project;
 
     public static void debug(String str) {
         logger.log(Level.FINE, str);

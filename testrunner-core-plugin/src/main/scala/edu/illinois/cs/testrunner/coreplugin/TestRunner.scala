@@ -9,7 +9,7 @@ import edu.illinois.cs.testrunner.data.results.TestRunResult
 import edu.illinois.cs.testrunner.runner.RunnerFactory
 import edu.illinois.cs.testrunner.testobjects.TestLocator
 import edu.illinois.cs.testrunner.util.Utility
-import org.apache.maven.project.MavenProject
+import edu.illinois.cs.testrunner.util.ProjectWrapper
 
 import scala.collection.JavaConverters._
 
@@ -17,7 +17,7 @@ import scala.collection.JavaConverters._
   * @author Reed Oei
   */
 class TestRunner extends TestPlugin {
-    def tests(source: String, project: MavenProject): Stream[String] = {
+    def tests(source: String, project: ProjectWrapper): Stream[String] = {
         if (source == null) {
             locateTests(project)
         } else {
@@ -31,7 +31,7 @@ class TestRunner extends TestPlugin {
         }
     }
 
-    def locateTests(project: MavenProject): Stream[String] = {
+    def locateTests(project: ProjectWrapper): Stream[String] = {
         // try locate JUnit4 tests first
         val tests = TestLocator.tests(project, JUnit)
         if (tests.length > 0) {
@@ -41,15 +41,15 @@ class TestRunner extends TestPlugin {
         return TestLocator.tests(project, JUnit5)
     }
 
-    def defaultOutputLocation(project: MavenProject): String =
-        Paths.get(project.getBuild.getDirectory)
+    def defaultOutputLocation(project: ProjectWrapper): String =
+        Paths.get(project.getBuildDirectory)
             .resolve("testrunner")
             .resolve(Utility.timestamp())
             .resolve("results.json")
             .toAbsolutePath
             .toString
 
-    override def execute(project: MavenProject): Unit =
+    override def execute(project: ProjectWrapper): Unit =
         RunnerFactory.from(project)
             .map(_.run(tests(Configuration.config().getProperty("testrunner.source", null), project)).get)
             .getOrElse(TestRunResult.empty("failed"))
