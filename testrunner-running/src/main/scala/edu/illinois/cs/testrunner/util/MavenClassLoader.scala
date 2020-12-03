@@ -3,7 +3,7 @@ package edu.illinois.cs.testrunner.util
 import java.io.File
 import java.net.URLClassLoader
 
-import org.apache.maven.project.MavenProject
+import edu.illinois.cs.testrunner.util.ProjectWrapper
 
 import scala.collection.JavaConverters._
 
@@ -14,14 +14,10 @@ class MavenClassLoader {
 
     private var classLoader: ClassLoader = _
 
-    def this(project: MavenProject) = {
+    def this(project: ProjectWrapper) = {
         this()
 
-        this.classpathElements =
-            (project.getCompileClasspathElements.asScala ++
-            project.getRuntimeClasspathElements.asScala ++
-            project.getTestClasspathElements.asScala ++
-            project.getSystemClasspathElements.asScala).toList
+        this.classpathElements = project.getClasspathElements.asScala.toList
 
         this.classLoader = new URLClassLoader(classpathElements.map(new File(_).toURI.toURL).toArray)
     }
