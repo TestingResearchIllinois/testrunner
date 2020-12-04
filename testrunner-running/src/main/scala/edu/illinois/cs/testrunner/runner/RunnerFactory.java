@@ -1,7 +1,7 @@
 package edu.illinois.cs.testrunner.runner;
 
 import edu.illinois.cs.testrunner.data.framework.TestFramework;
-import edu.illinois.cs.testrunner.util.MavenClassLoader;
+import edu.illinois.cs.testrunner.util.ProjectClassLoader;
 
 import edu.illinois.cs.testrunner.util.ProjectWrapper;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
@@ -18,14 +18,14 @@ import scala.Option;
 public class RunnerFactory {
     public static Option<Runner> from(final ProjectWrapper project) {
         return TestFramework.testFramework(project)
-                .map(framework -> create(framework, new MavenClassLoader(project).classpath(),
+                .map(framework -> create(framework, new ProjectClassLoader(project).classpath(),
                         project.surefireEnvironment(), project.getBasedir().toPath()));
     }
 
     public static List<Runner> allFrom(final ProjectWrapper project) {
         return TestFramework.getListOfFrameworks(project).stream()
                 .map(framework ->
-                        create(framework, new MavenClassLoader(project).classpath(),
+                        create(framework, new ProjectClassLoader(project).classpath(),
                                project.surefireEnvironment(), project.getBasedir().toPath()))
                 .collect(Collectors.toList());
     }
