@@ -65,8 +65,8 @@ public class TestPluginUtil {
     }
 
     private static void configJavaAgentPath() {
-        pluginClasspathUrls().stream().filter((url) -> url.toString().contains("testrunner-maven-plugin"))
-            .forEach((url) -> Configuration.config().setDefault("testplugin.javaagent", url.toString()));
+        pluginClasspathUrls().stream().filter((url) -> url.toString().contains("testrunner-maven-plugin") || 
+            url.toString().contains("testrunner-gradle-plugin")).forEach((url) -> Configuration.config().setDefault("testplugin.javaagent", url.toString()));
     }
 
     private static void setDefaults(Configuration configuration) {
