@@ -9,6 +9,7 @@
 
     <modules>
         <module>testrunner-core-plugin</module>
+        <module>testrunner-gradle-plugin</module>
         <module>testrunner-maven-plugin</module>
         <module>testrunner-running</module>
         <module>testrunner-testing</module>
