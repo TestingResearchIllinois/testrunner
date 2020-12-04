@@ -7,7 +7,7 @@ import edu.illinois.cs.testrunner.util.ProjectWrapper
 
 import scala.collection.JavaConverters._
 
-class MavenClassLoader {
+class ProjectClassLoader {
     def classpath(): String = String.join(File.pathSeparator, classpathElements.asJava)
 
     private var classpathElements: List[String] = _

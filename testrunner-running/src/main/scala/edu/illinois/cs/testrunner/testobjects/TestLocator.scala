@@ -3,7 +3,7 @@ package edu.illinois.cs.testrunner.testobjects
 import java.nio.file.{Path, Paths}
 
 import edu.illinois.cs.testrunner.data.framework.TestFramework
-import edu.illinois.cs.testrunner.util.MavenClassLoader
+import edu.illinois.cs.testrunner.util.ProjectClassLoader
 import org.apache.maven.plugin.surefire.util.DirectoryScanner
 import edu.illinois.cs.testrunner.util.ProjectWrapper
 import org.apache.maven.surefire.testset.TestListResolver
@@ -22,6 +22,6 @@ object TestLocator {
     def tests(project: ProjectWrapper, framework: TestFramework): Stream[String] =
         testClasses(project).flatMap(className =>
             GeneralTestClass
-                .create(new MavenClassLoader(project).loader, className, framework)
+                .create(new ProjectClassLoader(project).loader, className, framework)
                 .map(_.tests()).getOrElse(Stream.empty))
 }
