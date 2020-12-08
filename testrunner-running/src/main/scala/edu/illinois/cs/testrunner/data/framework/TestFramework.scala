@@ -6,6 +6,7 @@ import edu.illinois.cs.testrunner.testobjects.JUnitTestClass
 import edu.illinois.cs.testrunner.testobjects.JUnit5TestClass
 import edu.illinois.cs.testrunner.util.Utility
 import edu.illinois.cs.testrunner.util.ProjectWrapper
+import org.apache.maven.project.MavenProject
 import java.lang.annotation.Annotation
 import java.lang.reflect.Modifier
 import java.util.List;
@@ -44,6 +45,47 @@ object TestFramework {
         }
 
         if (project.containJunit5) {
+            listBuffer.append(JUnit5)
+        }
+
+        listBuffer.toList.asJava
+    }
+
+    // Needed for backward compatibility
+    def testFramework(project: MavenProject): Option[TestFramework] = {
+        // This method returns either JUnit 4 or JUnit 5 framework.
+        // If the project contains both JUnit 4 and JUnit 5 tests, return Option.empty
+        // Please use getListOfFrameworks for project mixes JUnit 4 and 5 tests
+
+        // Not sure why we have to cast here, but with this, Scala can't seem to figure out that
+        // we should get a list of dependencies
+        val artifacts = project.getArtifacts.asScala
+
+        val containJUnit4Dependency = artifacts.exists(artifact => artifact.getArtifactId == "junit")
+        val containJUnit5Dependency = artifacts.exists(artifact => artifact.getArtifactId == "junit-jupiter") ||
+                                      artifacts.exists(artifact => artifact.getArtifactId == "junit-jupiter-api")
+
+        if (containJUnit4Dependency && containJUnit5Dependency) {
+            Option.empty
+        } else if (containJUnit4Dependency) {
+            Option(JUnit)
+        } else if (containJUnit5Dependency) {
+            Option(JUnit5)
+        } else {
+            Option.empty
+        }
+    }
+
+    def getListOfFrameworks(project: MavenProject): List[TestFramework] = {
+        val artifacts = project.getArtifacts.asScala
+        val listBuffer = ListBuffer[TestFramework]()
+
+        if (artifacts.exists(artifact => artifact.getArtifactId == "junit")) {
+            listBuffer.append(JUnit)
+        }
+
+        if (artifacts.exists(artifact => artifact.getArtifactId == "junit-jupiter")
+                || artifacts.exists(artifact => artifact.getArtifactId == "junit-jupiter-api")) {
             listBuffer.append(JUnit5)
         }
 
