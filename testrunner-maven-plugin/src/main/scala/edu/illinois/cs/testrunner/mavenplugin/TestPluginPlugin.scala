@@ -47,8 +47,7 @@ class TestPluginPlugin extends AbstractMojo {
 
         try {
             val clz = Class.forName(Configuration.config().getProperty(TestPluginUtil.pluginClassName, className))
-            TestPluginUtil.logger = Logger.getLogger(className)
-            TestPluginUtil.project = new MavenProjectWrapper(project)
+            TestPluginUtil.project = new MavenProjectWrapper(project, this.getLog)
             clz.getMethod("execute", classOf[ProjectWrapper]).invoke(clz.getConstructor().newInstance(), TestPluginUtil.project)
         } catch {
             case e: NoSuchMethodException => {

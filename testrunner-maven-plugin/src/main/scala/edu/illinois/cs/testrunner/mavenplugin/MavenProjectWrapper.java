@@ -11,19 +11,38 @@ import java.util.stream.Stream;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.DependencyResolutionRequiredException;
 import org.apache.maven.model.Plugin;
+import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import edu.illinois.cs.testrunner.util.ProjectWrapper;
 
 public class MavenProjectWrapper implements ProjectWrapper {
     private MavenProject project;
+    private Log logger;
 
-    public MavenProjectWrapper(MavenProject project) {
+    public MavenProjectWrapper(MavenProject project, Log logger) {
         this.project = project;
+        this.logger = logger;
+    }
+
+    public void debug(String str) {
+        logger.debug(str);
+    }
+
+    public void info(String str) {
+        logger.info(str);
+    }
+
+    public void error(String str) {
+        logger.error(str);
+    }
+
+    public void error(Throwable t) {
+        logger.error(t);
     }
 
     public MavenProjectWrapper getParent() {
-        return new MavenProjectWrapper(project.getParent());
+        return new MavenProjectWrapper(project.getParent(), logger);
     }
 
     public File getBasedir() {

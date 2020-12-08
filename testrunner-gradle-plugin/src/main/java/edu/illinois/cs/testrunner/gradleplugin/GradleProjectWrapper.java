@@ -10,14 +10,33 @@ import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.tasks.testing.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import edu.illinois.cs.testrunner.util.ProjectWrapper;
 
 public class GradleProjectWrapper implements ProjectWrapper {
     private Project project;
+    private static Logger logger = LoggerFactory.getLogger(GradleProjectWrapper.class);
 
     public GradleProjectWrapper(Project project) {
         this.project = project;
+    }
+
+    public void debug(String str) {
+        logger.debug(str);
+    }
+
+    public void info(String str) {
+        logger.info(str);
+    }
+
+    public void error(String str) {
+        logger.error(str);
+    }
+
+    public void error(Throwable t) {
+        logger.error("", t);
     }
 
     public GradleProjectWrapper getParent() {

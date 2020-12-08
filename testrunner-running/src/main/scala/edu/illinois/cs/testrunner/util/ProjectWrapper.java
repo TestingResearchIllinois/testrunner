@@ -5,6 +5,10 @@ import java.util.List;
 import java.util.Map;
 
 public interface ProjectWrapper {
+    public void debug(String str);
+    public void info(String str);
+    public void error(String str);
+    public void error(Throwable t);
     public ProjectWrapper getParent();
     public File getBasedir();
     public String getGroupId();

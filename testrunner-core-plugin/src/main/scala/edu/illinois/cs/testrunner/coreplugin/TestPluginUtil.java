@@ -5,10 +5,8 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.logging.Logger;
 import java.util.Arrays;
 import java.util.List;
-import java.util.logging.Level;
 
 import edu.illinois.cs.testrunner.util.ProjectWrapper;
 import edu.illinois.cs.testrunner.configuration.ConfigProps;
@@ -20,24 +18,7 @@ public class TestPluginUtil {
     final public static String defaultPluginClassName = "edu.illinois.cs.testrunner.coreplugin.TestRunner";
     private static List<URL> pluginCpURLs = null;
     private static String pluginCp = null;
-    public static Logger logger;
     public static ProjectWrapper project;
-
-    public static void debug(String str) {
-        logger.log(Level.FINE, str);
-    }
-
-    public static void info(String str) {
-        logger.log(Level.INFO, str);
-    }
-
-    public static void error(String str) {
-        logger.log(Level.SEVERE, str);
-    }
-
-    public static void error(Throwable t) {
-        logger.log(Level.SEVERE, "", t);
-    }
 
     private static void generate() {
         // TODO: When upgrading past Java 8, this will probably no longer work
