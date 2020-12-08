@@ -44,39 +44,32 @@ class TestPluginPlugin extends AbstractMojo {
 
     override def execute(): Unit = {
         TestPluginUtil.setConfigs(propertiesPath)
-        val clz = Class.forName(Configuration.config().getProperty(TestPluginUtil.pluginClassName, className))
 
-//        val surefire = project.getPlugin("org.apache.maven.plugins:maven-surefire-plugin")
-//        println(surefire)
-//        println(project.getRemotePluginRepositories)
-//        println(project.getClassRealm)
-//
-//        println(getPluginContext)
-//        println(getPluginContext.get("pluginDescriptor"))
-//
-//        val pluginDescriptor: PluginDescriptor = getPluginContext.get("pluginDescriptor").asInstanceOf[PluginDescriptor]
-//
-//        println(pluginDescriptor.getClassRealm)
-//
-//        val surefireDescriptor = pluginManager.getMojoDescriptor(surefire, "test",
-//            project.getRemotePluginRepositories, session.getRepositorySession)
-//        surefireDescriptor.getPluginDescriptor.setClassRealm(pluginDescriptor.getClassRealm)
-//        println(surefireDescriptor)
+        try {
+            val clz = Class.forName(Configuration.config().getProperty(TestPluginUtil.pluginClassName, className))
+            TestPluginUtil.logger = Logger.getLogger(className)
+            TestPluginUtil.project = new MavenProjectWrapper(project)
+            clz.getMethod("execute", classOf[ProjectWrapper]).invoke(clz.getConstructor().newInstance(), TestPluginUtil.project)
+        } catch {
+            case e: NoSuchMethodException => {
+                val clz = Class.forName(Configuration.config().getProperty(TestPluginUtil.pluginClassName, className))
+                // Needed for backward compatibility
+                TestPluginPlugin.mojo = this
+                TestPluginPlugin.mavenProject = project
 
-//        val containerField = classOf[DefaultMavenPluginManager].getDeclaredField("container")
-//        containerField.setAccessible(true)
-//        pluginManager.asInstanceOf[DefaultMavenPluginManager]
-//        println(containerField.get(pluginManager).asInstanceOf[DefaultPlexusContainer].getCo
-
-//        val configuredSurefire = pluginManager.getConfiguredMojo(classOf[AbstractMojo], session,
-//            new MojoExecution(surefireDescriptor))
-//
-//        println(configuredSurefire)
-
-        TestPluginUtil.logger = Logger.getLogger(className)
-        TestPluginUtil.project = new MavenProjectWrapper(project)
-
-        val obj = clz.getConstructor().newInstance()
-        clz.getMethod("execute", classOf[ProjectWrapper]).invoke(obj, TestPluginUtil.project)
+                clz.getMethod("execute", classOf[MavenProject]).invoke(clz.getConstructor().newInstance(), project)
+            }
+        }
     }
+}
+
+// Needed for backward compatibility
+object TestPluginPlugin {
+    var mojo: AbstractMojo = _
+    var mavenProject: MavenProject = _
+
+    def debug(str: String): Unit = mojo.getLog.debug(str)
+    def info(str: String): Unit = mojo.getLog.info(str)
+    def error(str: String): Unit = mojo.getLog.error(str)
+    def error(t: Throwable): Unit = mojo.getLog.error(t)
 }

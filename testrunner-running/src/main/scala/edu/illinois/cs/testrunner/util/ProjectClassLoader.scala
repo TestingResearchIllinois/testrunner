@@ -4,6 +4,7 @@ import java.io.File
 import java.net.URLClassLoader
 
 import edu.illinois.cs.testrunner.util.ProjectWrapper
+import org.apache.maven.project.MavenProject
 
 import scala.collection.JavaConverters._
 
@@ -18,6 +19,19 @@ class ProjectClassLoader {
         this()
 
         this.classpathElements = project.getClasspathElements.asScala.toList
+
+        this.classLoader = new URLClassLoader(classpathElements.map(new File(_).toURI.toURL).toArray)
+    }
+
+    // Needed for backward compatibility
+    def this(project: MavenProject) = {
+        this()
+
+        this.classpathElements =
+            (project.getCompileClasspathElements.asScala ++
+            project.getRuntimeClasspathElements.asScala ++
+            project.getTestClasspathElements.asScala ++
+            project.getSystemClasspathElements.asScala).toList
 
         this.classLoader = new URLClassLoader(classpathElements.map(new File(_).toURI.toURL).toArray)
     }
