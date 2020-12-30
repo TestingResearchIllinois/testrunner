@@ -61,12 +61,12 @@ case class ExecutionInfo(classpath: String, javaAgent: Option[Path],
         }
 
         if (timeout > 0 && useTimeouts) {
-	    process.waitFor(timeout, timeoutUnit)
+            process.waitFor(timeout, timeoutUnit)
             //val b = process.waitFor(timeout, timeoutUnit)
             //if (b) process.exitValue() else -1
         } else {
             process.waitFor()
         }
-	process
+        process
     }
 }
