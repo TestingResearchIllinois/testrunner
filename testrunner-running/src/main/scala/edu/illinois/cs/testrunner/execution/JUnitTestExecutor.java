@@ -242,36 +242,46 @@ public class JUnitTestExecutor {
             }
             descs.add(test.description());
         }
-        // Construct the request that filters out only tests we need and sorts in specified order
-        re = core.run(Request.classes(classes.toArray(new Class[0])).
-                      // Filter to only include passed in tests
-                      filterWith(new Filter() {
-                              @Override
-                              public boolean shouldRun(Description description) {
-                                  if (description.isTest()) {
-                                      return descs.contains(description);
-                                  }
 
-                                  for (Description each : description.getChildren()) {
-                                      if (shouldRun(each)) {
-                                          return true;
+        if (Configuration.config().getProperty("testrunner.interleave", false)) {
+            try {
+                re = core.run(new JUnitTestRunner(tests));
+            } catch (InitializationError initializationError) {
+                initializationError.printStackTrace();
+                return TestRunResult.empty(testRunId);
+            }
+        } else {
+            // Construct the request that filters out only tests we need and sorts in specified order
+            re = core.run(Request.classes(classes.toArray(new Class[0])).
+                          // Filter to only include passed in tests
+                          filterWith(new Filter() {
+                                  @Override
+                                  public boolean shouldRun(Description description) {
+                                      if (description.isTest()) {
+                                          return descs.contains(description);
                                       }
-                                  }
-                                  return false;
-                              }
 
-                              @Override
-                              public String describe() {
-                                  return "Filter by list";
-                              }
-                          }).
-                      // Sort to run based on passed in tests
-                      sortWith(new Comparator<Description>() {
-                              @Override
-                              public int compare(Description d1, Description d2) {
-                                  return descs.indexOf(d1) - descs.indexOf(d2);
-                              }
-                          }));
+                                      for (Description each : description.getChildren()) {
+                                          if (shouldRun(each)) {
+                                              return true;
+                                          }
+                                      }
+                                      return false;
+                                  }
+
+                                  @Override
+                                  public String describe() {
+                                      return "Filter by list";
+                                  }
+                              }).
+                          // Sort to run based on passed in tests
+                          sortWith(new Comparator<Description>() {
+                                  @Override
+                                  public int compare(Description d1, Description d2) {
+                                      return descs.indexOf(d1) - descs.indexOf(d2);
+                                  }
+                              }));
+        }
 
         final Set<TestResult> results = results(re, tests, listener);
 
