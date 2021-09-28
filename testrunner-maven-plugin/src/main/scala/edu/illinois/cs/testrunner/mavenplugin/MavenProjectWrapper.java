@@ -42,6 +42,9 @@ public class MavenProjectWrapper implements ProjectWrapper {
     }
 
     public MavenProjectWrapper getParent() {
+        if (project.getParent() == null) {
+            return null;
+        }
         return new MavenProjectWrapper(project.getParent(), logger);
     }
 
