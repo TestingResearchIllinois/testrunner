@@ -40,6 +40,9 @@ public class GradleProjectWrapper implements ProjectWrapper {
     }
 
     public GradleProjectWrapper getParent() {
+        if (project.getParent() == null) {
+            return null;
+        }
         return new GradleProjectWrapper(project.getParent());
     }
 
