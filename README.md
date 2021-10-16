@@ -21,7 +21,7 @@ Then, add the following plugin to the `pom.xml` of the Maven project you wish to
 <plugin>
 	<groupId>edu.illinois.cs</groupId>
 	<artifactId>testrunner-maven-plugin</artifactId>
-	<version>1.0-SNAPSHOT</version>
+	<version>1.2</version>
 	<configuration>
 		<className>FULLY_QUALIFIED_CLASS_NAME_GOES_HERE</className>
 	</configuration>
@@ -39,14 +39,16 @@ mvn testrunner:testplugin
 If you want the latest version of this plugin (or for some reason you can't get if off Maven central), you can run:
 
 ```bash
-git clone https://github.com/TestingResearchIllinois/testrunner-maven-plugin
-cd testrunner-maven-plugin
+git clone https://github.com/TestingResearchIllinois/testrunner
+cd testrunner
 mvn install
 ```
 
+and change the plugin version to the latest one (currently 1.3-SNAPSHOT)
+
 You can generate documentation using:
 ```
-mvn javadoc:javadoc scala:doc
+mvn javadoc:javadoc
 ```
 # Documentation
 
