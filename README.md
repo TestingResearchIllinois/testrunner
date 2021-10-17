@@ -19,12 +19,12 @@ Then, add the following plugin to the `pom.xml` of the Maven project you wish to
 
 ```xml
 <plugin>
-	<groupId>edu.illinois.cs</groupId>
-	<artifactId>testrunner-maven-plugin</artifactId>
-	<version>1.2</version>
-	<configuration>
-		<className>FULLY_QUALIFIED_CLASS_NAME_GOES_HERE</className>
-	</configuration>
+    <groupId>edu.illinois.cs</groupId>
+    <artifactId>testrunner-maven-plugin</artifactId>
+    <version>1.2</version>
+    <configuration>
+        <className>FULLY_QUALIFIED_CLASS_NAME_GOES_HERE</className>
+    </configuration>
 </plugin>
 ```
 
