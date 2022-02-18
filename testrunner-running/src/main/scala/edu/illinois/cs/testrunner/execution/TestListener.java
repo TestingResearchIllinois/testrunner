@@ -1,13 +1,16 @@
 package edu.illinois.cs.testrunner.execution;
 
+import edu.illinois.cs.diaper.StateCapture;
+import edu.illinois.cs.diaper.agent.MainAgent;
+import org.apache.commons.io.FileUtils;
 import org.junit.runner.Description;
 import org.junit.runner.notification.Failure;
 import org.junit.runner.notification.RunListener;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 
 public class TestListener extends RunListener {
     private final Map<String, Long> times;
@@ -33,9 +36,44 @@ public class TestListener extends RunListener {
         ignoredTests.add(JUnitTestRunner.fullName(description));
     }
 
+    private String readFile(String path) throws IOException {
+        File file = new File(path);
+        return FileUtils.readFileToString(file, "UTF-8");
+    }
+
     @Override
     public void testStarted(Description description) throws Exception {
-        times.put(JUnitTestRunner.fullName(description), System.nanoTime());
+        //times.put(JUnitTestRunner.fullName(description), System.nanoTime());
+        String fullTestName = JUnitTestRunner.fullName(description);
+        times.put(fullTestName, System.nanoTime());
+
+        String phase = readFile(MainAgent.tmpfile);
+        if(MainAgent.targetTestName.equals(fullTestName)) {
+            if(phase.equals("3") || phase.equals("4")) {
+                StateCapture sc = new StateCapture(fullTestName);
+                System.out.println("MainAgent.targetTestName: " + MainAgent.targetTestName +
+                        " fullTestName: " + fullTestName);
+                System.out.println("phase: " + phase);
+                System.out.println("test listener!!!!!!!!! Capturing the states!!!!!!!!!!!!!");
+                sc.capture();
+                //System.out.println("sc.dirty: " + sc.dirty);
+            }
+            else if(phase.equals("5")) {
+                StateCapture sc = new StateCapture(fullTestName);
+                System.out.println("MainAgent.targetTestName: " + MainAgent.targetTestName +
+                        " fullTestName: " + fullTestName);
+                System.out.println("phase: " + phase);
+                System.out.println("test listener!!!!!!!!! diffing the fields in passorder!!!!!!!!!!!!!");
+                sc.diffing();
+            }
+            /*else if(phase.startsWith("diffFieldBefore ")) {
+                System.out.println("test listener!!!!!!!!! reflection on the states before!!!!!!!!!!!!!");
+                StateCapture sc = new StateCapture(fullTestName);
+                String diffField = phase.replaceFirst("diffFieldBefore ", "");
+                sc.fixing(diffField);
+            }*/
+            System.out.println("testStarted end!!");
+        }
     }
 
     @Override
@@ -57,6 +95,63 @@ public class TestListener extends RunListener {
             testRuntimes.put(fullTestName, (System.nanoTime() - startTime) / 1E9);
         } else {
             System.out.println("Test finished but did not start: " + fullTestName);
+        }
+
+        String phase = readFile(MainAgent.tmpfile);
+
+        if(phase.startsWith("4")) {
+            String polluter = phase.split(" ")[1];
+            if(polluter.equals(fullTestName)) {
+                StateCapture sc = new StateCapture(fullTestName);
+                System.out.println("MainAgent.targetTestName: " + MainAgent.targetTestName +
+                        " fullTestName: " + fullTestName);
+                System.out.println("phase: " + phase);
+                System.out.println("test listener at after!!!!!!!!! Capturing the states!!!!!!!!!!!!!");
+                sc.capture();
+            }
+        }
+        else if(phase.startsWith("diffFieldAfter ")) {
+            String polluter = phase.split(" ")[1];
+            if(polluter.equals(fullTestName)) {
+                // reflect one field each time
+                if(phase.split(" ").length == 3) {
+                    System.out.println("test listener at after!!!!!!!!! reflection on the states after!!!!!!!!!!!!!");
+                    StateCapture sc = new StateCapture(fullTestName);
+                    String diffField = phase.split(" ")[2];
+                    sc.fixing(diffField);
+                }
+                //reflect two fields
+                else if(phase.split(" ").length >= 4){
+                    StateCapture sc = new StateCapture(fullTestName);
+                    String[] tmpLists = phase.split(" ");
+                    List<String> fields = new ArrayList<>();
+                    for(int i = 2 ; i < tmpLists.length ; i++) {
+                        fields.add(tmpLists[i]);
+                    }
+                    sc.fixingFList(fields);
+                }
+            }
+        }
+
+        if(MainAgent.targetTestName.equals(fullTestName)) {
+            if(phase.equals("2") || phase.equals("2tmp")) {
+                System.out.println("MainAgent.targetTestName: " + MainAgent.targetTestName +
+                        " fullTestName: " + fullTestName);
+                System.out.println("phase: " + phase);
+
+                StateCapture sc = new StateCapture(fullTestName);//CaptureFactory.StateCapture(fullTestName);
+                System.out.println("test listener at after !!!!!!!!! Capturing the states!!!!!!!!!!!!!");
+                sc.capture();
+                //System.out.println("sc.dirty: " + sc.dirty);
+            }
+            else if(phase.equals("5doublevic")) {
+                StateCapture sc = new StateCapture(fullTestName);
+                System.out.println("MainAgent.targetTestName: " + MainAgent.targetTestName +
+                        " fullTestName: " + fullTestName);
+                System.out.println("phase: " + phase);
+                System.out.println("test listener!!!!!!!!! diffing the fields in doublevictim order!!!!!!!!!!!!!");
+                sc.diffing();
+            }
         }
     }
 }

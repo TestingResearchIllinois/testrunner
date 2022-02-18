@@ -33,6 +33,7 @@ case class ExecutionInfo(classpath: String, javaAgent: Option[Path],
     def args(args: String*): List[String] =
         List("java", "-cp", classpath) ++
         javaAgent.map(p => List("-javaagent:" ++ p.toAbsolutePath.toString)).getOrElse(List.empty) ++
+        List("-Xms4096M", "-Xmx4096M") ++
         javaOpts ++
         properties.map(p => "-D" ++ p._1 ++ "=" ++ p._2) ++
         List(Objects.requireNonNull(className)) ++

@@ -54,12 +54,16 @@ trait Runner {
 
             val testRunId = generateTestRunId()
 
-            val exitCode = info.run(
+            val exitCode = try {
+                info.run(
                     testRunId,
                     framework().toString,
                     path.toAbsolutePath.toString,
                     propertiesPath.toAbsolutePath.toString,
                     outputPath.toAbsolutePath.toString).exitValue()
+            } catch {
+                case e: IllegalThreadStateException => e.printStackTrace(); 0
+            }
 
             if (exitCode == 0) {
                 autoClose(Source.fromFile(outputPath.toAbsolutePath.toString).bufferedReader())(reader =>
