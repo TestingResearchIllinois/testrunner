@@ -1,4 +1,4 @@
-package edu.illinois.cs.diaper;
+package edu.illinois.cs.statecapture;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -6,7 +6,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
 
-public class DiaperLogger {
+public class StateCaptureLogger {
     public enum Task { SERIALIZATION, STATE_CAPTURE, DIFF };
     private static double serializationTime;
     private static double stateCaptureTime;
@@ -17,10 +17,10 @@ public class DiaperLogger {
     private String pathToLogFile;
 
 
-    public DiaperLogger(String projName, String pathToLogFile) {
-	this.projName = projName;
-	this.pathToLogFile = pathToLogFile;
-	createHeader();
+    public StateCaptureLogger(String projName, String pathToLogFile) {
+		this.projName = projName;
+		this.pathToLogFile = pathToLogFile;
+		createHeader();
     }
 
     private void writeToFile(String fn, String content, boolean append) {
@@ -37,13 +37,6 @@ public class DiaperLogger {
 	    }             
     }
 
-    public double getSerializationTime() {
-	return serializationTime;
-    }
-
-    public double getStateCaptureTime() {
-	return stateCaptureTime;
-    }
     public void startTimer() {
 	startTime = System.currentTimeMillis();
     }
@@ -67,19 +60,19 @@ public class DiaperLogger {
     }
 
     public void saveToFileAndReset() {
+		// save the entry: projName, stateCaptureTime, serializationTime, diffTime
+		String entry = String.format("%s,%.3f,%.3f,%.3f\n", projName, stateCaptureTime,
+						 serializationTime, diffTime);
+		writeToFile(pathToLogFile, entry, true);
 
-	// save the entry: projName, stateCaptureTime, serializationTime, diffTime
-	String entry = String.format("%s,%.3f,%.3f,%.3f\n", projName, stateCaptureTime,
-				     serializationTime, diffTime);
-	writeToFile(pathToLogFile, entry, true);
-	
-	// reset the times
-	serializationTime = 0;
-	stateCaptureTime = 0;
-	diffTime = 0;
+		// reset the times
+		serializationTime = 0;
+		stateCaptureTime = 0;
+		diffTime = 0;
     }
+
     private void createHeader() {
-	String header = "projName,stateCaptureTime, serializationTime, diffTime\n";
-	writeToFile(pathToLogFile, header, false);
+		String header = "projName,stateCaptureTime, serializationTime, diffTime\n";
+		writeToFile(pathToLogFile, header, false);
     }
 }

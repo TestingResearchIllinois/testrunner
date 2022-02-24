@@ -1,4 +1,4 @@
-package edu.illinois.cs.diaper;
+package edu.illinois.cs.statecapture;
 
 public interface IStateCapture {
 

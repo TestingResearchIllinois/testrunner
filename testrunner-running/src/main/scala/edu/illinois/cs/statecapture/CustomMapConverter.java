@@ -1,4 +1,4 @@
-package edu.illinois.cs.diaper;
+package edu.illinois.cs.statecapture;
 
 import com.thoughtworks.xstream.converters.collections.MapConverter;
 import com.thoughtworks.xstream.converters.MarshallingContext;
@@ -21,7 +21,6 @@ public class CustomMapConverter extends MapConverter {
             writeNullItem(context, writer);
         } else {
             String clazz = mapper().serializedClass(item.getClass());
-            // String clazz = item.getClass().getName();
             ExtendedHierarchicalStreamWriterHelper.startNode(writer, name, item.getClass());
             writer.addAttribute("class", clazz);  // Map the class as an attribute to the node
             writeBareItem(item, context, writer);
