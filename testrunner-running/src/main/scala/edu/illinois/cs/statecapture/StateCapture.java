@@ -3,14 +3,18 @@ package edu.illinois.cs.statecapture;
 import com.thoughtworks.xstream.XStream;
 import com.thoughtworks.xstream.converters.reflection.*;
 import com.thoughtworks.xstream.core.JVM;
-import com.thoughtworks.xstream.core.UnmarshalChain;
 import com.thoughtworks.xstream.io.xml.DomDriver;
 
+import com.thoughtworks.xstream.mapper.Mapper;
 import com.thoughtworks.xstream.security.AnyTypePermission;
 import edu.illinois.cs.statecapture.agent.MainAgent;
 import edu.illinois.cs.statecapture.StateCaptureLogger;
 
-import java.io.*;
+import java.io.File;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.PrintWriter;
+import java.io.IOException;
 
 import java.lang.Object;
 import java.lang.reflect.Field;
@@ -33,6 +37,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.Files;
 
+import edu.illinois.cs.testrunner.configuration.Configuration;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.mockito.Mockito;
@@ -71,9 +76,6 @@ public class StateCapture implements IStateCapture {
     private static final Set<String> ignores;
 
     //for reflection and deserialization
-    private int xmlFileNum;
-    private Set<String> diffFields = new HashSet<String> ();
-    private Set<String> diffFields_filtered = new HashSet<String> ();
     public String subxmlFold;
     public String rootFold;
     public String diffFold;
@@ -148,7 +150,7 @@ public class StateCapture implements IStateCapture {
         try {
             dBuilder = DocumentBuilderFactory.newInstance()
                 .newDocumentBuilder();
-        } catch(ParserConfigurationException ex) {
+        } catch (ParserConfigurationException ex) {
             ex.printStackTrace();
         }
         setup();
@@ -178,29 +180,6 @@ public class StateCapture implements IStateCapture {
         }
     }
 
-    /**
-     * Writes content into a file.
-     *
-     * @param  fn       name of the destination file
-     * @param  content  string representing the data to be written
-     * @param  append   boolean indicating whether to append to destination file or rewrite it
-     */
-    protected void writeToFile(String fn, String content, boolean append) {
-        synchronized(StateCapture.class) {
-            try {
-                File f = new File(fn);
-                f.createNewFile();
-
-                FileWriter fw = new FileWriter(f.getAbsoluteFile(), append);
-                BufferedWriter w = new BufferedWriter(fw);
-                w.write(content);
-                w.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
     Set<String> File2SetString(String path) {
         File file = new File(path);
         Set<String> keys = new HashSet<>();
@@ -216,16 +195,15 @@ public class StateCapture implements IStateCapture {
     }
 
     public void setup() {
-        subxmlFold = MainAgent.subxmlFold;
-        rootFold = MainAgent.rootFold;
-        diffFold = MainAgent.diffFold;
-        slug = MainAgent.slug;
-        reflectionFile = MainAgent.reflectionFold + "/0.txt";
-        xmlFileNum = countDirNums(subxmlFold);
+        subxmlFold = Configuration.config().getProperty("replay.subxmlFold");
+        rootFold = Configuration.config().getProperty("replay.rootFold");
+        diffFold = Configuration.config().getProperty("replay.diffFold");
+        slug = Configuration.config().getProperty("replay.slug");
+        reflectionFile = Configuration.config().getProperty("replay.reflectionFold") + "/reflection.txt";
     }
 
     public void fixing(String fieldName) throws IOException {
-        String subxml0 = subxmlFold + "/0xml";
+        String subxml0 = subxmlFold + "/passing_order_xml";
         try {
             String path0 = subxml0 + "/" + fieldName + ".xml";
             String state0 = readFile(path0);
@@ -237,82 +215,82 @@ public class StateCapture implements IStateCapture {
 
             try {
                 Class c = Class.forName(className);
-                Field[] Flist = c.getDeclaredFields();
-                for (int i=0; i< Flist.length; i++) {
-                    if (Flist[i].getName().equals(subFieldName)) {
-                        try {
-                            Flist[i].setAccessible(true);
-                            Field modifiersField = Field.class.getDeclaredField("modifiers");
-                            modifiersField.setAccessible(true);
-                            modifiersField.setInt(Flist[i], Flist[i].getModifiers() & ~Modifier.FINAL);
+                Field[] fieldList = c.getDeclaredFields();
+                for (int i=0; i< fieldList.length; i++) {
+                    if (!fieldList[i].getName().equals(subFieldName)) {
+                        continue;
+                    }
+                    try {
+                        fieldList[i].setAccessible(true);
+                        Field modifiersField = Field.class.getDeclaredField("modifiers");
+                        modifiersField.setAccessible(true);
+                        modifiersField.setInt(fieldList[i], fieldList[i].getModifiers() & ~Modifier.FINAL);
+                    }
+                    catch (Exception e) {
+                        String outputPrivateError = fieldName + " reflectionError: " + e + "\n";
+                        Files.write(Paths.get(reflectionFile), outputPrivateError.getBytes(),
+                                StandardOpenOption.APPEND);
+                    }
+                    try {
+                        ob_0 = fieldList[i].get(null);
+                        boolean threadLocal = false;
+                        if (ob_0 instanceof ThreadLocal) {
+                            threadLocal = true;
                         }
-                        catch (Exception e) {
-                            String outputPrivateError = fieldName + " reflectionError: " + e + "\n";
-                            Files.write(Paths.get(reflectionFile), outputPrivateError.getBytes(),
-                                    StandardOpenOption.APPEND);
-                        }
                         try {
-                            ob_0 = Flist[i].get(null);
-                            boolean threadLocal = false;
-                            if (ob_0 instanceof ThreadLocal) {
-                                threadLocal = true;
-                            }
-                            try{
-                                if (Mockito.mockingDetails(ob_0).isMock()) {
-                                    Method m = Mockito.class.getDeclaredMethod("reset", Object[].class);
-                                    m.invoke(null, new Object[]{new Object[]{ob_0}});
-                                } else {
-                                    System.setProperty("currentClassInXStream", Flist[i].getDeclaringClass().getName());
-                                    System.setProperty("currentFieldInXStream", Flist[i].getName());
-                                    UnmarshalChain.reset();
-                                    UnmarshalChain.initializeChain(Flist[i].getDeclaringClass().getName(), Flist[i].getName());
-                                    ob_0 = xstream.fromXML(state0);
-                                }
-                            } catch (NoSuchMethodError NSME) {
-                                System.setProperty("currentClassInXStream", Flist[i].getDeclaringClass().getName());
-                                System.setProperty("currentFieldInXStream", Flist[i].getName());
+                            // directly invoke reset when dealing with a Mockito mock object
+                            if (Mockito.mockingDetails(ob_0).isMock()) {
+                                Method m = Mockito.class.getDeclaredMethod("reset", Object[].class);
+                                m.invoke(null, new Object[]{new Object[]{ob_0}});
+                            } else {
+                                System.setProperty("currentClassInXStream", fieldList[i].getDeclaringClass().getName());
+                                System.setProperty("currentFieldInXStream", fieldList[i].getName());
                                 UnmarshalChain.reset();
-                                UnmarshalChain.initializeChain(Flist[i].getDeclaringClass().getName(), Flist[i].getName());
+                                UnmarshalChain.initializeChain(fieldList[i].getDeclaringClass().getName(), fieldList[i].getName());
                                 ob_0 = xstream.fromXML(state0);
                             }
-                            try {
-                                if (AccessibleObject.class.isAssignableFrom(ob_0.getClass())) {
-                                    ((AccessibleObject) ob_0).setAccessible(true);
-                                }
-                            } catch (NullPointerException NPEX) {
-                                NPEX.printStackTrace();
-                            }
-                            if (threadLocal) {
-                                Object tmp = Flist[i].get(null);
-                                ((ThreadLocal)tmp).set(ob_0);
-                                ob_0 = tmp;
-                            }
-                            // Flist[i].set(null, ob_0);
-                            FieldUtils.writeField(Flist[i], (Object)null, ob_0, true);
-
-                            String output = fieldName + " set\n";
-                            Files.write(Paths.get(reflectionFile), output.getBytes(),
-                                    StandardOpenOption.APPEND);
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                            String outputNormalError = fieldName + " reflectionError: " + e + "\n";
-                            Files.write(Paths.get(reflectionFile), outputNormalError.getBytes(),
-                                    StandardOpenOption.APPEND);
+                        } catch (NoSuchMethodError nsme) {
+                            System.setProperty("currentClassInXStream", fieldList[i].getDeclaringClass().getName());
+                            System.setProperty("currentFieldInXStream", fieldList[i].getName());
+                            UnmarshalChain.reset();
+                            UnmarshalChain.initializeChain(fieldList[i].getDeclaringClass().getName(), fieldList[i].getName());
+                            ob_0 = xstream.fromXML(state0);
                         }
-                        break;
+                        try {
+                            if (AccessibleObject.class.isAssignableFrom(ob_0.getClass())) {
+                                ((AccessibleObject) ob_0).setAccessible(true);
+                            }
+                        } catch (NullPointerException npex) {
+                            npex.printStackTrace();
+                        }
+                        if (threadLocal) {
+                            Object tmp = fieldList[i].get(null);
+                            ((ThreadLocal)tmp).set(ob_0);
+                            ob_0 = tmp;
+                        }
+
+                        FieldUtils.writeField(fieldList[i], (Object)null, ob_0, true);
+
+                        String output = fieldName + " set\n";
+                        Files.write(Paths.get(reflectionFile), output.getBytes(),
+                                StandardOpenOption.APPEND);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        String outputNormalError = fieldName + " reflectionError: " + e + "\n";
+                        Files.write(Paths.get(reflectionFile), outputNormalError.getBytes(),
+                                StandardOpenOption.APPEND);
                     }
                 }
-            } catch (Exception e){
+            } catch (Exception e) {
             }
-        } catch(Exception e) {
+        } catch (Exception e) {
             String output = fieldName + " deserializeError: " + e + "\n";
             Files.write(Paths.get(reflectionFile), output.getBytes(),
                     StandardOpenOption.APPEND);
         }
     }
 
-    public void fixingFList(List<String> fields) throws IOException {
-        String subxml0 = subxmlFold + "/0xml";
+    public void fixingFieldList(List<String> fields) throws IOException {
         for (int index = 0; index < fields.size(); index++) {
             String fieldName = fields.get(index);
             fixing(fieldName);
@@ -321,14 +299,15 @@ public class StateCapture implements IStateCapture {
 
     public void capture() {
         try {
-            String phase = readFile(MainAgent.tmpfile);
-            if (!phase.equals("2tmp")) {
+            String state = Configuration.config().getProperty("statecapture.state");
+            if (!state.equals("double_victim")) {
                 capture_real();
             } else {
                 capture_class();
             }
         }
-        catch(Exception e) {
+        catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -338,10 +317,11 @@ public class StateCapture implements IStateCapture {
      * @throws IOException
      */
     public void capture_real() throws IOException {
-        String phase = readFile(MainAgent.tmpfile);
+        String phase = Configuration.config().getProperty("statecapture.phase");
+        PrintWriter writer;
 
         // read whitelist;
-        try (BufferedReader br = new BufferedReader(new FileReader(MainAgent.pkgFile))) {
+        try (BufferedReader br = new BufferedReader(new FileReader(Configuration.config().getProperty("replay.pkgFile")))) {
             String line;
             while ((line = br.readLine()) != null) {
                 whiteList.add(line);
@@ -355,18 +335,21 @@ public class StateCapture implements IStateCapture {
 
         Set<String> allFieldName = new HashSet<String>();
         Class[] loadedClasses = MainAgent.getInstrumentation().getAllLoadedClasses();
-        if (phase.equals("3")) {
+        File file = new File(rootFold + "/eagerLoadingFields.txt");
+        if (file.exists()) {
             try {
                 List<Class> list = new ArrayList(Arrays.asList(loadedClasses));
-                String tmp2Path = rootFold + "/2tmp.txt";
+                String tmp2Path = rootFold + "/eagerLoadingFields.txt";
                 Set<String> tmp2Classes = File2SetString(tmp2Path);
                 for (String key : tmp2Classes) {
                     try {
                         Class tmp = Class.forName(key);
                         list.add(0, tmp);
-                    } catch (ClassNotFoundException CNFE) {
+                    } catch (ClassNotFoundException cnfe) {
+                        cnfe.printStackTrace();
                         continue;
-                    } catch (NoClassDefFoundError NCDFE) {
+                    } catch (NoClassDefFoundError ncdfe) {
+                        ncdfe.printStackTrace();
                         continue;
                     }
                 }
@@ -377,68 +360,6 @@ public class StateCapture implements IStateCapture {
                 e.printStackTrace();
             }
         }
-        for (Class c : loadedClasses) {
-            // Ignore classes in standard java to get top-level
-            // TODO(gyori): make this read from file or config option
-            String clz = c.getName();
-            if ((clz.contains("java.") && !clz.startsWith("java.lang.System"))
-                    || (clz.contains("javax.") && !clz.startsWith("javax.cache.Caching"))
-                    || clz.contains("javafx.")
-                    || clz.contains("jdk.")
-                    || clz.contains("scala.")
-                    || clz.contains("sun.")
-                    || clz.contains("edu.illinois.cs")
-                    || clz.contains("org.custommonkey.xmlunit")
-                    || clz.contains("org.junit")
-                    || clz.contains("statecapture.com.")
-                    || clz.contains("statecapture.org.")
-                    || clz.equals("com.openpojo.reflection.impl.AClassWithBadMethod__Generated_OpenPojo")) {
-                continue;
-            }
-
-            Set<Field> allFields = new HashSet<Field>();
-            try {
-                Field[] declaredFields = c.getDeclaredFields();
-                Field[] fields = c.getFields();
-                allFields.addAll(Arrays.asList(declaredFields));
-                allFields.addAll(Arrays.asList(fields));
-            } catch (NoClassDefFoundError e) {
-                e.printStackTrace();
-                continue;
-            } catch (Exception exception) {
-                exception.printStackTrace();
-                continue;
-            }
-            // prepare for the subxml fold
-
-            for (Field f : allFields) {
-                String fieldName = getFieldFQN(f);
-
-                if (ignores.contains(fieldName)) {
-                    continue;
-                }
-
-                // if a field is final and has a primitive type there's no point to capture it.
-                if (Modifier.isStatic(f.getModifiers())
-                        && !(Modifier.isFinal(f.getModifiers()) &&  f.getType().isPrimitive())) {
-                    try {
-                        if (shouldCapture(f)) {
-                            allFieldName.add(fieldName);
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        continue;
-                    }
-                }
-            }
-        }
-
-        int num = countDirNums(subxmlFold) - 1;
-        PrintWriter writer = new PrintWriter(MainAgent.fieldFold + "/" + num + ".txt", "UTF-8");
-        for (String ff : allFieldName) {
-            writer.println(ff);
-        }
-        writer.close();
 
         for (Class c : loadedClasses) {
             // Ignore classes in standard java to get top-level
@@ -466,8 +387,10 @@ public class StateCapture implements IStateCapture {
                 allFields.addAll(Arrays.asList(declaredFields));
                 allFields.addAll(Arrays.asList(fields));
             } catch (NoClassDefFoundError e) {
+                e.printStackTrace();
                 continue;
             } catch (Exception exception) {
+                exception.printStackTrace();
                 continue;
             }
             // prepare for the subxml fold
@@ -475,7 +398,6 @@ public class StateCapture implements IStateCapture {
             for (Field f : allFields) {
                 String fieldName = getFieldFQN(f);
 
-                String subFieldName = fieldName.substring(fieldName.lastIndexOf(".")+1, fieldName.length());
                 if (ignores.contains(fieldName)) {
                     continue;
                 }
@@ -485,16 +407,17 @@ public class StateCapture implements IStateCapture {
                     && !(Modifier.isFinal(f.getModifiers()) &&  f.getType().isPrimitive())) {
                     try {
                         if (shouldCapture(f)) {
+                            allFieldName.add(fieldName);
                             f.setAccessible(true);
 
                             Object instance;
                             try {
                                 instance = f.get(null);
-                            } catch (NoClassDefFoundError NCDFE) {
+                            } catch (NoClassDefFoundError ncdfe) {
                                 instance = null;
-                                NCDFE.printStackTrace();
+                                ncdfe.printStackTrace();
                             }
-                            if(instance instanceof ThreadLocal) {
+                            if (instance instanceof ThreadLocal) {
                                 instance = ((ThreadLocal)instance).get();
                             }
                             LinkedHashMap<String, Object> nameToInstance_temp = new LinkedHashMap<String, Object>();
@@ -511,11 +434,11 @@ public class StateCapture implements IStateCapture {
                                 writer.close();
                             }
                         }
-                    } catch (OutOfMemoryError OFME) {
-                        OFME.printStackTrace();
+                    } catch (OutOfMemoryError ofme) {
+                        ofme.printStackTrace();
                         continue;
-                    } catch (NoClassDefFoundError NCDFE) {
-                        NCDFE.printStackTrace();
+                    } catch (NoClassDefFoundError ncdfe) {
+                        ncdfe.printStackTrace();
                         continue;
                     } catch (Exception exception) {
                         exception.printStackTrace();
@@ -525,30 +448,48 @@ public class StateCapture implements IStateCapture {
             }
         }
 
+        String state = Configuration.config().getProperty("statecapture.state");
+        if (state.equals("passing_order")) {
+            writer = new PrintWriter(Configuration.config().getProperty("replay.allFieldsFold") + "/passing_order.txt", "UTF-8");
+            for (String ff : allFieldName) {
+                writer.println(ff);
+            }
+            writer.close();
 
-        writer = new PrintWriter(rootFold + "/" + num + ".txt", "UTF-8");
-        for (String key : nameToInstance.keySet()) {
-            writer.println(key);
+            writer = new PrintWriter(rootFold + "/passing_order.txt", "UTF-8");
+            for (String key : nameToInstance.keySet()) {
+                writer.println(key);
+            }
+            writer.close();
+        } else if (state.equals("failing_order")) {
+            writer = new PrintWriter(Configuration.config().getProperty("replay.allFieldsFold") + "/failing_order.txt", "UTF-8");
+            for (String ff : allFieldName) {
+                writer.println(ff);
+            }
+            writer.close();
+
+            writer = new PrintWriter(rootFold + "/failing_order.txt", "UTF-8");
+            for (String key : nameToInstance.keySet()) {
+                writer.println(key);
+            }
+            writer.close();
         }
-        writer.close();
     }
 
     /**
-     * Adds the current loadable classes to the current class list in 2tmp.txt file in the phase 2tmp.
+     * Adds the current loadable classes to the current class list in eagerLoadingFields.txt file in the phase 2tmp.
      * @throws IOException
      */
     public void capture_class() throws IOException {
-
-        String phase = readFile(MainAgent.tmpfile);
-
         // read whitelist;
-        try (BufferedReader br = new BufferedReader(new FileReader(MainAgent.pkgFile))) {
+        try (BufferedReader br = new BufferedReader(new FileReader(Configuration.config().getProperty("replay.pkgFile")))) {
             String line;
             while ((line = br.readLine()) != null) {
                 whiteList.add(line);
             }
         }
         catch (Exception e) {
+            e.printStackTrace();
             return;
         }
 
@@ -573,8 +514,8 @@ public class StateCapture implements IStateCapture {
             classes.add(clz);
         }
 
-        // write to the 2tmp.txt file
-        PrintWriter writer = new PrintWriter(rootFold + "/" + "2tmp.txt", "UTF-8");
+        // write to the eagerLoadingFields.txt file
+        PrintWriter writer = new PrintWriter(rootFold + "/" + "eagerLoadingFields.txt", "UTF-8");
         for (String str : classes) {
             writer.println(str);
         }
@@ -587,21 +528,22 @@ public class StateCapture implements IStateCapture {
     }
 
     String createSubxmlFold() {
-        int subxmlDirCnt = 0;
-        File f = new File(subxmlFold);
-        File[] files = f.listFiles();
-        if (files != null)
-            for (int i = 0; i < files.length; i++) {
-                if (files[i].isDirectory()) {
-                    subxmlDirCnt++;
-                }
+        String state = Configuration.config().getProperty("statecapture.state");
+        String subxmlDir = "";
+        if (state.equals("passing_order")) {
+            subxmlDir = subxmlFold + "/passing_order_xml";
+            File theDir = new File(subxmlDir);
+            if (!theDir.exists()) {
+                theDir.mkdirs();
             }
-
-        String subxmlDir = subxmlFold + "/" + subxmlDirCnt +"xml";
-        File theDir = new File(subxmlDir);
-        if (!theDir.exists()){
-            theDir.mkdirs();
+        } else if (state.equals("failing_order")) {
+            subxmlDir = subxmlFold + "/failing_order_xml";
+            File theDir = new File(subxmlDir);
+            if (!theDir.exists()) {
+                theDir.mkdirs();
+            }
         }
+
         return subxmlDir;
     }
 
@@ -652,10 +594,9 @@ public class StateCapture implements IStateCapture {
             error.printStackTrace();
             dirty = true;
         }
-
-        try{
+        try {
             s = sanitizeXmlChars(s);
-        } catch(Exception exception) {
+        } catch (Exception exception) {
             exception.printStackTrace();
             dirty = true;
         } catch (OutOfMemoryError error) {
@@ -699,12 +640,15 @@ public class StateCapture implements IStateCapture {
     private XStream getXStreamInstance() {
         XStream xstream = new XStream(JVM.newReflectionProvider(new FieldDictionary(
                 new AlphabeticalFieldkeySorter())),new DomDriver());
-
-
-        xstream.setMode(XStream.XPATH_ABSOLUTE_REFERENCES);
-        xstream.addPermission(AnyTypePermission.ANY);
+        Mapper mapper = xstream.getMapper();
+        mapper = new CustomElementIgnoringMapper(mapper);
+        XStream newXStream = new XStream(JVM.newReflectionProvider(new FieldDictionary(
+                new AlphabeticalFieldkeySorter())),new DomDriver(),xstream.getClassLoader(),mapper);
         // Set fields to be omitted during serialization
 
+        xstream = newXStream;
+        xstream.setMode(XStream.XPATH_ABSOLUTE_REFERENCES);
+        xstream.addPermission(AnyTypePermission.ANY);
         xstream.omitField(Thread.class, "contextClassLoader");
         xstream.omitField(java.security.ProtectionDomain.class, "classloader");
         xstream.omitField(java.security.ProtectionDomain.class, "codesource");
@@ -715,7 +659,12 @@ public class StateCapture implements IStateCapture {
         xstream.omitField(java.lang.ref.SoftReference.class, "referent");
         xstream.omitField(java.lang.ref.Reference.class, "referent");
 
-        xstream.registerConverter(new CustomMapConverter(xstream.getMapper()));
+
+
+        xstream.registerConverter(new CustomMapConverter(xstream.getMapper()), 1);
+        xstream.registerConverter(new CustomReflectionConverter(xstream.getMapper(), xstream.getReflectionProvider()), -19);
+        xstream.registerConverter(new CustomSerializableConverter(xstream.getMapper(), xstream.getReflectionProvider(), xstream.getClassLoaderReference()), -9);
+
 
         for (String ignore : ignores) {
             int lastDot = ignore.lastIndexOf(".");
@@ -740,16 +689,5 @@ public class StateCapture implements IStateCapture {
     public String readFile(String path) throws IOException {
         File file = new File(path);
         return FileUtils.readFileToString(file, "UTF-8");
-    }
-
-    int countDirNums(String path) {
-        File [] list = new File(path).listFiles();
-        int num = 0;
-        for (File file : list){
-            if (file.isDirectory()){
-                num ++;
-            }
-        }
-        return num;
     }
 }
