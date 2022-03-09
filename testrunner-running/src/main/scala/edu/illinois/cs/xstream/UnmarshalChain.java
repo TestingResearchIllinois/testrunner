@@ -1,4 +1,4 @@
-package edu.illinois.cs.statecapture;
+package edu.illinois.cs.xstream;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;

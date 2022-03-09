@@ -1,20 +1,19 @@
-package edu.illinois.cs.statecapture;
+package edu.illinois.cs.xstream;
 
-import com.thoughtworks.xstream.converters.ConversionException;
-import com.thoughtworks.xstream.converters.UnmarshallingContext;
-import com.thoughtworks.xstream.converters.collections.MapConverter;
 import com.thoughtworks.xstream.converters.MarshallingContext;
+import com.thoughtworks.xstream.converters.UnmarshallingContext;
 import com.thoughtworks.xstream.io.ExtendedHierarchicalStreamWriterHelper;
 import com.thoughtworks.xstream.io.HierarchicalStreamReader;
 import com.thoughtworks.xstream.io.HierarchicalStreamWriter;
 import com.thoughtworks.xstream.mapper.Mapper;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Iterator;
 import java.util.Map;
 
-public class CustomMapConverter extends MapConverter {
+public class MapConverter extends com.thoughtworks.xstream.converters.collections.MapConverter {
 
-    public CustomMapConverter(Mapper mapper) {
+    public MapConverter(Mapper mapper) {
         super(mapper);
     }
 
@@ -50,31 +49,14 @@ public class CustomMapConverter extends MapConverter {
     @Override
     protected void putCurrentEntryIntoMap(final HierarchicalStreamReader reader, final UnmarshallingContext context,
                                           final Map<?, ?> map, final Map<?, ?> target) {
-        final Object key = readCompleteItem(reader, context, map);
-        UnmarshalChain.pushNode(UnmarshalChain.makeUnmarshalMapEntryNode(key)); // Try getting the key and putting it in the chain to map to the value
-        Object value = null;
-        int level = reader.getLevel();
         try {
-            value = readCompleteItem(reader, context, map);
-        } catch (ConversionException ce) {
-            // If there is a problem getting the value from this map entry, use the value in the current heap
-            try {
-                value = UnmarshalChain.getCurrObject();
-            } catch (UnmarshalChain.MapEntryMissingException e) {   // If map entry is simply missing in current heap, then return, don't update map
-                return;
-            } catch (ClassNotFoundException | NoSuchFieldException | IllegalAccessException e) {
-                e.printStackTrace();
-                throw new ConversionException(e);
-            }
-        } finally {
-            // Make sure level moves up to the proper location after this kind of exception
-            while (reader.getLevel() > level) {
-                reader.moveUp();
-            }
-            UnmarshalChain.popNode();
+            MapConverterHelper.putCurrentEntryIntoMap(reader, context, map, target, this);
+        } catch (NoSuchMethodException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
         }
-        @SuppressWarnings("unchecked")
-        final Map<Object, Object> targetMap = (Map<Object, Object>)target;
-        targetMap.put(key, value);
     }
 }

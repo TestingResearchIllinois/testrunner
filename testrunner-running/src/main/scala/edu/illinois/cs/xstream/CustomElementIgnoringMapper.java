@@ -1,4 +1,4 @@
-package edu.illinois.cs.statecapture;
+package edu.illinois.cs.xstream;
 
 import com.thoughtworks.xstream.core.util.FastField;
 import com.thoughtworks.xstream.mapper.ElementIgnoringMapper;

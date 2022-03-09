@@ -1,14 +1,15 @@
 package edu.illinois.cs.statecapture;
 
 import com.thoughtworks.xstream.XStream;
-import com.thoughtworks.xstream.converters.reflection.*;
+import com.thoughtworks.xstream.converters.reflection.FieldDictionary;
+import com.thoughtworks.xstream.converters.reflection.FieldKey;
+import com.thoughtworks.xstream.converters.reflection.FieldKeySorter;
 import com.thoughtworks.xstream.core.JVM;
 import com.thoughtworks.xstream.io.xml.DomDriver;
 
 import com.thoughtworks.xstream.mapper.Mapper;
 import com.thoughtworks.xstream.security.AnyTypePermission;
 import edu.illinois.cs.statecapture.agent.MainAgent;
-import edu.illinois.cs.statecapture.StateCaptureLogger;
 
 import java.io.File;
 import java.io.BufferedReader;
@@ -38,6 +39,15 @@ import java.nio.file.StandardOpenOption;
 import java.nio.file.Files;
 
 import edu.illinois.cs.testrunner.configuration.Configuration;
+import edu.illinois.cs.xstream.UnmarshalChain;
+import edu.illinois.cs.xstream.CustomElementIgnoringMapper;
+import edu.illinois.cs.xstream.EnumMapConverter;
+import edu.illinois.cs.xstream.LambdaConverter;
+import edu.illinois.cs.xstream.LookAndFeelConverter;
+import edu.illinois.cs.xstream.MapConverter;
+import edu.illinois.cs.xstream.ReflectionConverter;
+import edu.illinois.cs.xstream.SerializableConverter;
+import edu.illinois.cs.xstream.TreeMapConverter;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.mockito.Mockito;
@@ -50,6 +60,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import static com.thoughtworks.xstream.XStream.PRIORITY_LOW;
+import static com.thoughtworks.xstream.XStream.PRIORITY_NORMAL;
+import static com.thoughtworks.xstream.XStream.PRIORITY_VERY_LOW;
 
 public class StateCapture implements IStateCapture {
 
@@ -659,12 +672,17 @@ public class StateCapture implements IStateCapture {
         xstream.omitField(java.lang.ref.SoftReference.class, "referent");
         xstream.omitField(java.lang.ref.Reference.class, "referent");
 
+        xstream.registerConverter(new MapConverter(xstream.getMapper()), PRIORITY_NORMAL + 1);
+        xstream.registerConverter(new TreeMapConverter(xstream.getMapper()), PRIORITY_NORMAL + 1);
+        xstream.registerConverter(new EnumMapConverter(xstream.getMapper()), PRIORITY_NORMAL + 1);
 
+        xstream.registerConverter(new ReflectionConverter(xstream.getMapper(), xstream.getReflectionProvider()), PRIORITY_VERY_LOW + 1);
+        xstream.registerConverter(new SerializableConverter(xstream.getMapper(), xstream.getReflectionProvider(), xstream.getClassLoaderReference()), PRIORITY_LOW + 1);
+        xstream.registerConverter(new LambdaConverter(xstream.getMapper(), xstream.getReflectionProvider(), xstream.getClassLoaderReference()), PRIORITY_NORMAL + 1);
 
-        xstream.registerConverter(new CustomMapConverter(xstream.getMapper()), 1);
-        xstream.registerConverter(new CustomReflectionConverter(xstream.getMapper(), xstream.getReflectionProvider()), -19);
-        xstream.registerConverter(new CustomSerializableConverter(xstream.getMapper(), xstream.getReflectionProvider(), xstream.getClassLoaderReference()), -9);
-
+        if (JVM.isSwingAvailable()) {
+            xstream.registerConverter(new LookAndFeelConverter(xstream.getMapper(), xstream.getReflectionProvider()), PRIORITY_NORMAL + 1);
+        }
 
         for (String ignore : ignores) {
             int lastDot = ignore.lastIndexOf(".");
