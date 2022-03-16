@@ -41,7 +41,7 @@ public class TestListener extends RunListener {
         times.put(fullTestName, System.nanoTime());
 
         String phase = Configuration.config().getProperty("statecapture.phase", "");
-        if (Configuration.config().getProperty("replay.dtname").equals(fullTestName)) {
+        if (Configuration.config().getProperty("statecapture.testname").equals(fullTestName)) {
             if (phase.equals("capture_before")) {
                 StateCapture sc = new StateCapture(fullTestName);
                 sc.capture();
@@ -71,22 +71,22 @@ public class TestListener extends RunListener {
         }
 
         String phase = Configuration.config().getProperty("statecapture.phase", "");
-
-        System.out.println("PHASE: " + phase);
-
         if (phase.equals("capture_after")) {
-            if (Configuration.config().getProperty("replay.dtname").equals(fullTestName)) {
+            if (Configuration.config().getProperty("statecapture.testname").equals(fullTestName)) {
                 StateCapture sc = new StateCapture(fullTestName);//CaptureFactory.StateCapture(fullTestName);
                 sc.capture();
             }
         }
         else if (phase.equals("load")) {
-            if (Configuration.config().getProperty("replay.dtname").equals(fullTestName)) {
+            if (Configuration.config().getProperty("statecapture.testname").equals(fullTestName)) {
                 // reflect one field each time
                 String fieldName = Configuration.config().getProperty("statecapture.fieldName", "");
-                StateCapture sc = new StateCapture(fullTestName);
-                String diffField = fieldName.split(",")[0];
-                sc.fixing(diffField);
+
+                if (!fieldName.isEmpty()) {
+                    StateCapture sc = new StateCapture(fullTestName);
+                    String diffField = fieldName.split(",")[0];
+                    sc.load(diffField);
+                }
             }
         }
     }

@@ -27,12 +27,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.Map;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.TreeMap;
-import java.util.Properties;
 import java.util.Comparator;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
@@ -52,14 +50,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.mockito.Mockito;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-
 import static com.thoughtworks.xstream.XStream.PRIORITY_LOW;
 import static com.thoughtworks.xstream.XStream.PRIORITY_NORMAL;
 import static com.thoughtworks.xstream.XStream.PRIORITY_VERY_LOW;
@@ -68,132 +58,22 @@ public class StateCapture implements IStateCapture {
 
 
     protected final String testName;
-    protected final List<String> currentTestStates = new ArrayList<String>();
-    protected final List<Set<String>> currentRoots = new ArrayList<Set<String>>();
-
-    private DocumentBuilder dBuilder = null;
-    public boolean dirty;
-    private boolean classLevel;
+    private boolean dirty;
 
     // The State, field name of static root to object pointed to
     private static final LinkedHashMap<String, Object> nameToInstance = new LinkedHashMap<String, Object>();
-    protected static final int MAX_NUM = 4;
-    private static final boolean verbose;
-    private static final String logFilePath;
-    private static final String projectName;
-    private static final boolean enableLogging;
-    private static final StateCaptureLogger logger;
-    private static final int execSize = Runtime.getRuntime().availableProcessors();
-    private static ExecutorService executor = Executors.newFixedThreadPool(execSize);
-    private static final Set<String> whiteList;
-    private static final Set<String> ignores;
 
     //for reflection and deserialization
-    public String subxmlFold;
-    public String rootFold;
-    public String diffFold;
-    public String slug;
-    public String reflectionFile;
-
-    static {
-        Properties p = System.getProperties();
-        // Default if missing is false
-        if (p.getProperty("verbose") == null) {
-            verbose = false;
-        } else {
-            verbose = ((p.getProperty("verbose").equals("1")) ? true : false);
-        }
-
-        // Check if time logging is requested
-        if (p.getProperty("logFile") == null) {
-            enableLogging = false;
-            logFilePath = "LOG_logfile";
-        } else {
-            enableLogging = true;
-            logFilePath = p.getProperty("logFile");
-        }
-        if (p.getProperty("projName") == null) {
-            projectName = "NO_NAME";
-        } else {
-            projectName = p.getProperty("projName");
-        }
-
-        logger = new StateCaptureLogger(projectName, logFilePath);
-
-        Runnable r = new Runnable() {
-            public void run() {
-                try {
-                    executor.shutdown();
-                    executor.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS);
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                }
-            }
-        };
-        Thread t = new Thread(r);
-        Runtime.getRuntime().addShutdownHook(t);
-
-        whiteList = fileToSet(p, "whitelist");
-        ignores = fileToSet(p, "ignores");
-    }
-
-    private static Set<String> fileToSet(Properties p, String name) {
-        String fn = p.getProperty(name);
-        Set<String> wl = new HashSet<>();
-        if (fn == null) {
-            return wl;
-        } else {
-            try (BufferedReader br = new BufferedReader(new FileReader(fn))) {
-                    for(String line; (line = br.readLine()) != null; ) {
-                        // Support for comments (line starts with #)
-                        // Essentially only add if it does not start with #
-                        if (!line.startsWith("#")) {
-                            wl.add(line);
-                        }
-                    }
-                    return Collections.unmodifiableSet(wl);
-                } catch (IOException ex) {
-                throw new RuntimeException(ex);
-            }
-        }
-    }
+    private String subxmlFold;
+    private String rootFile;
+    private String reflectionFile;
 
     public StateCapture(String testName) {
         this.testName = testName;
-        try {
-            dBuilder = DocumentBuilderFactory.newInstance()
-                .newDocumentBuilder();
-        } catch (ParserConfigurationException ex) {
-            ex.printStackTrace();
-        }
         setup();
     }
 
-    // Constructor to control if it's a class-level state capture
-    public StateCapture(String testName, boolean classLevel) {
-        this(testName);
-        this.classLevel = classLevel;
-    }
-
-    /**
-     * Call this method to capture the state, save it, and do the diffing if all required
-     * states for the current test have been captured.
-     * @throws IOException 
-     */
-    public void runCapture() {
-        // if we already captured 4 states for the current test, then we are ready to diff
-        if (currentTestStates.size() == MAX_NUM) {
-            if (enableLogging) {
-                logger.startTimer();
-            }
-            if (enableLogging) {
-                logger.stopTimeAndUpdate(StateCaptureLogger.Task.DIFF);
-                logger.saveToFileAndReset();
-            }
-        }
-    }
-
-    Set<String> File2SetString(String path) {
+    static Set<String> readFileContentsAsSet(String path) {
         File file = new File(path);
         Set<String> keys = new HashSet<>();
         try (BufferedReader br = new BufferedReader(new FileReader(file))) {
@@ -207,16 +87,18 @@ public class StateCapture implements IStateCapture {
         return keys;
     }
 
-    public void setup() {
-        subxmlFold = Configuration.config().getProperty("replay.subxmlFold");
-        rootFold = Configuration.config().getProperty("replay.rootFold");
-        diffFold = Configuration.config().getProperty("replay.diffFold");
-        slug = Configuration.config().getProperty("replay.slug");
-        reflectionFile = Configuration.config().getProperty("replay.reflectionFold") + "/reflection.txt";
+    private void setup() {
+        subxmlFold = Configuration.config().getProperty("statecapture.subxmlFold");
+        rootFile = Configuration.config().getProperty("statecapture.rootFile");
+        reflectionFile = Configuration.config().getProperty("statecapture.reflectionFile");
     }
 
-    public void fixing(String fieldName) throws IOException {
-        String subxml0 = subxmlFold + "/passing_order_xml";
+    public void load(String fieldName) throws IOException {
+        if (subxmlFold.isEmpty() || reflectionFile.isEmpty()) {
+            System.out.println("WARNING: The subxml folder or reflection file are not provided, thus it will not do loading.");
+            return;
+        }
+        String subxml0 = subxmlFold;
         try {
             String path0 = subxml0 + "/" + fieldName + ".xml";
             String state0 = readFile(path0);
@@ -256,15 +138,11 @@ public class StateCapture implements IStateCapture {
                                 Method m = Mockito.class.getDeclaredMethod("reset", Object[].class);
                                 m.invoke(null, new Object[]{new Object[]{ob_0}});
                             } else {
-                                System.setProperty("currentClassInXStream", fieldList[i].getDeclaringClass().getName());
-                                System.setProperty("currentFieldInXStream", fieldList[i].getName());
                                 UnmarshalChain.reset();
                                 UnmarshalChain.initializeChain(fieldList[i].getDeclaringClass().getName(), fieldList[i].getName());
                                 ob_0 = xstream.fromXML(state0);
                             }
                         } catch (NoSuchMethodError nsme) {
-                            System.setProperty("currentClassInXStream", fieldList[i].getDeclaringClass().getName());
-                            System.setProperty("currentFieldInXStream", fieldList[i].getName());
                             UnmarshalChain.reset();
                             UnmarshalChain.initializeChain(fieldList[i].getDeclaringClass().getName(), fieldList[i].getName());
                             ob_0 = xstream.fromXML(state0);
@@ -294,7 +172,8 @@ public class StateCapture implements IStateCapture {
                                 StandardOpenOption.APPEND);
                     }
                 }
-            } catch (Exception e) {
+            } catch (Exception e) { // *** check the kind of exception
+                e.printStackTrace();
             }
         } catch (Exception e) {
             String output = fieldName + " deserializeError: " + e + "\n";
@@ -303,17 +182,15 @@ public class StateCapture implements IStateCapture {
         }
     }
 
-    public void fixingFieldList(List<String> fields) throws IOException {
-        for (int index = 0; index < fields.size(); index++) {
-            String fieldName = fields.get(index);
-            fixing(fieldName);
-        }
-    }
-
+    @Override
     public void capture() {
         try {
-            String state = Configuration.config().getProperty("statecapture.state");
-            if (!state.equals("double_victim")) {
+            String state = Configuration.config().getProperty("statecapture.state", "");
+            if (subxmlFold.isEmpty() || rootFile.isEmpty()) {
+                System.out.println("WARNING: The subxml folder or root folder are not provided, thus it will not do capturing.");
+                return;
+            }
+            if (!state.equals("eagerload")) {
                 capture_real();
             } else {
                 capture_class();
@@ -329,31 +206,20 @@ public class StateCapture implements IStateCapture {
      * and the current roots to the currentRoots list.
      * @throws IOException
      */
-    public void capture_real() throws IOException {
-        String phase = Configuration.config().getProperty("statecapture.phase");
+    private void capture_real() throws IOException {
         PrintWriter writer;
-
-        // read whitelist;
-        try (BufferedReader br = new BufferedReader(new FileReader(Configuration.config().getProperty("replay.pkgFile")))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                whiteList.add(line);
-            }
-        }
-        catch (Exception e) {
-            return;
-        }
 
         String subxmlDir = createSubxmlFold();
 
         Set<String> allFieldName = new HashSet<String>();
         Class[] loadedClasses = MainAgent.getInstrumentation().getAllLoadedClasses();
+        String rootFold = rootFile.substring(0, rootFile.lastIndexOf("/"));
         File file = new File(rootFold + "/eagerLoadingFields.txt");
         if (file.exists()) {
             try {
                 List<Class> list = new ArrayList(Arrays.asList(loadedClasses));
                 String tmp2Path = rootFold + "/eagerLoadingFields.txt";
-                Set<String> tmp2Classes = File2SetString(tmp2Path);
+                Set<String> tmp2Classes = readFileContentsAsSet(tmp2Path);
                 for (String key : tmp2Classes) {
                     try {
                         Class tmp = Class.forName(key);
@@ -411,10 +277,6 @@ public class StateCapture implements IStateCapture {
             for (Field f : allFields) {
                 String fieldName = getFieldFQN(f);
 
-                if (ignores.contains(fieldName)) {
-                    continue;
-                }
-
                 // if a field is final and has a primitive type there's no point to capture it.
                 if (Modifier.isStatic(f.getModifiers())
                     && !(Modifier.isFinal(f.getModifiers()) &&  f.getType().isPrimitive())) {
@@ -461,51 +323,24 @@ public class StateCapture implements IStateCapture {
             }
         }
 
-        String state = Configuration.config().getProperty("statecapture.state");
-        if (state.equals("passing_order")) {
-            writer = new PrintWriter(Configuration.config().getProperty("replay.allFieldsFold") + "/passing_order.txt", "UTF-8");
-            for (String ff : allFieldName) {
-                writer.println(ff);
-            }
-            writer.close();
-
-            writer = new PrintWriter(rootFold + "/passing_order.txt", "UTF-8");
-            for (String key : nameToInstance.keySet()) {
-                writer.println(key);
-            }
-            writer.close();
-        } else if (state.equals("failing_order")) {
-            writer = new PrintWriter(Configuration.config().getProperty("replay.allFieldsFold") + "/failing_order.txt", "UTF-8");
-            for (String ff : allFieldName) {
-                writer.println(ff);
-            }
-            writer.close();
-
-            writer = new PrintWriter(rootFold + "/failing_order.txt", "UTF-8");
-            for (String key : nameToInstance.keySet()) {
-                writer.println(key);
-            }
-            writer.close();
+        writer = new PrintWriter(Configuration.config().getProperty("statecapture.allFieldsFile"), "UTF-8");
+        for (String ff : allFieldName) {
+            writer.println(ff);
         }
+        writer.close();
+
+        writer = new PrintWriter(rootFile, "UTF-8");
+        for (String key : nameToInstance.keySet()) {
+            writer.println(key);
+        }
+        writer.close();
     }
 
     /**
      * Adds the current loadable classes to the current class list in eagerLoadingFields.txt file in the phase 2tmp.
      * @throws IOException
      */
-    public void capture_class() throws IOException {
-        // read whitelist;
-        try (BufferedReader br = new BufferedReader(new FileReader(Configuration.config().getProperty("replay.pkgFile")))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                whiteList.add(line);
-            }
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-            return;
-        }
-
+    private void capture_class() throws IOException {
         // get all loadable classes
         Class[] loadedClasses = MainAgent.getInstrumentation().getAllLoadedClasses();
         Set<String> classes = new HashSet<>();
@@ -528,6 +363,7 @@ public class StateCapture implements IStateCapture {
         }
 
         // write to the eagerLoadingFields.txt file
+        String rootFold = rootFile.substring(0, rootFile.lastIndexOf("/"));
         PrintWriter writer = new PrintWriter(rootFold + "/" + "eagerLoadingFields.txt", "UTF-8");
         for (String str : classes) {
             writer.println(str);
@@ -541,22 +377,12 @@ public class StateCapture implements IStateCapture {
     }
 
     String createSubxmlFold() {
-        String state = Configuration.config().getProperty("statecapture.state");
         String subxmlDir = "";
-        if (state.equals("passing_order")) {
-            subxmlDir = subxmlFold + "/passing_order_xml";
-            File theDir = new File(subxmlDir);
-            if (!theDir.exists()) {
-                theDir.mkdirs();
-            }
-        } else if (state.equals("failing_order")) {
-            subxmlDir = subxmlFold + "/failing_order_xml";
-            File theDir = new File(subxmlDir);
-            if (!theDir.exists()) {
-                theDir.mkdirs();
-            }
+        subxmlDir = subxmlFold;
+        File theDir = new File(subxmlDir);
+        if (!theDir.exists()) {
+            theDir.mkdirs();
         }
-
         return subxmlDir;
     }
 
@@ -566,7 +392,7 @@ public class StateCapture implements IStateCapture {
      * @param  in  the input string to be filtered
      * @return     the input string with the unparsable characters removed
      */
-    public static String sanitizeXmlChars(String in) {
+    private static String sanitizeXmlChars(String in) {
         in = in.replaceAll("&#", "&amp;#");
         StringBuilder out = new StringBuilder();
         char current;
@@ -684,17 +510,6 @@ public class StateCapture implements IStateCapture {
             xstream.registerConverter(new LookAndFeelConverter(xstream.getMapper(), xstream.getReflectionProvider()), PRIORITY_NORMAL + 1);
         }
 
-        for (String ignore : ignores) {
-            int lastDot = ignore.lastIndexOf(".");
-            String clz = ignore.substring(0,lastDot);
-            String fld = ignore.substring(lastDot+1);
-            try {
-                xstream.omitField(Class.forName(clz), fld);
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            }
-        }
-
         return xstream;
     }
     
@@ -704,7 +519,7 @@ public class StateCapture implements IStateCapture {
         return clz + "." + fld;
     }
 
-    public String readFile(String path) throws IOException {
+    private String readFile(String path) throws IOException {
         File file = new File(path);
         return FileUtils.readFileToString(file, "UTF-8");
     }
