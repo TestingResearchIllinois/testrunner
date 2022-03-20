@@ -38,10 +38,6 @@
             <artifactId>scala-library</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.xmlunit</groupId>
-            <artifactId>xmlunit-core</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.junit.platform</groupId>
             <artifactId>junit-platform-launcher</artifactId>
         </dependency>
@@ -126,7 +122,6 @@
                         <include>**/*Test.*</include>
                         <include>**/*Suite.*</include>
                     </includes>
-                    <argLine>-Xmx4096m</argLine>
                 </configuration>
             </plugin>
             <plugin>

@@ -6,38 +6,11 @@ import com.thoughtworks.xstream.converters.reflection.FieldKey;
 import com.thoughtworks.xstream.converters.reflection.FieldKeySorter;
 import com.thoughtworks.xstream.core.JVM;
 import com.thoughtworks.xstream.io.xml.DomDriver;
-
 import com.thoughtworks.xstream.mapper.Mapper;
 import com.thoughtworks.xstream.security.AnyTypePermission;
+
 import edu.illinois.cs.statecapture.agent.MainAgent;
-
-import java.io.File;
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.PrintWriter;
-import java.io.IOException;
-
-import java.lang.Object;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.lang.reflect.AccessibleObject;
-import java.lang.reflect.Modifier;
-
-import java.util.List;
-import java.util.Set;
-import java.util.Map;
-import java.util.Arrays;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.TreeMap;
-import java.util.Comparator;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
-import java.nio.file.Files;
-
 import edu.illinois.cs.testrunner.configuration.Configuration;
-import edu.illinois.cs.xstream.UnmarshalChain;
 import edu.illinois.cs.xstream.CustomElementIgnoringMapper;
 import edu.illinois.cs.xstream.EnumMapConverter;
 import edu.illinois.cs.xstream.LambdaConverter;
@@ -46,6 +19,36 @@ import edu.illinois.cs.xstream.MapConverter;
 import edu.illinois.cs.xstream.ReflectionConverter;
 import edu.illinois.cs.xstream.SerializableConverter;
 import edu.illinois.cs.xstream.TreeMapConverter;
+import edu.illinois.cs.xstream.UnmarshalChain;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.PrintWriter;
+
+import java.lang.Object;
+import java.lang.reflect.AccessibleObject;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.mockito.Mockito;
@@ -56,7 +59,6 @@ import static com.thoughtworks.xstream.XStream.PRIORITY_VERY_LOW;
 
 public class StateCapture implements IStateCapture {
 
-
     protected final String testName;
     private boolean dirty;
 
@@ -64,7 +66,7 @@ public class StateCapture implements IStateCapture {
     private static final LinkedHashMap<String, Object> nameToInstance = new LinkedHashMap<String, Object>();
 
     //for reflection and deserialization
-    private String subxmlFold;
+    private String xmlFold;
     private String rootFile;
     private String reflectionFile;
 
@@ -81,29 +83,30 @@ public class StateCapture implements IStateCapture {
             while ((line = br.readLine()) != null) {
                 keys.add(line);
             }
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (FileNotFoundException fnfe) {
+            fnfe.printStackTrace();
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
         }
         return keys;
     }
 
     private void setup() {
-        subxmlFold = Configuration.config().getProperty("statecapture.subxmlFold");
+        xmlFold = Configuration.config().getProperty("statecapture.subxmlFold");
         rootFile = Configuration.config().getProperty("statecapture.rootFile");
         reflectionFile = Configuration.config().getProperty("statecapture.reflectionFile");
     }
 
     public void load(String fieldName) throws IOException {
-        if (subxmlFold.isEmpty() || reflectionFile.isEmpty()) {
+        if (xmlFold.isEmpty() || reflectionFile.isEmpty()) {
             System.out.println("WARNING: The subxml folder or reflection file are not provided, thus it will not do loading.");
             return;
         }
-        String subxml0 = subxmlFold;
         try {
-            String path0 = subxml0 + "/" + fieldName + ".xml";
+            String path0 = xmlFold + "/" + fieldName + ".xml";
             String state0 = readFile(path0);
             String className = fieldName.substring(0, fieldName.lastIndexOf("."));
-            String subFieldName = fieldName.substring(fieldName.lastIndexOf(".")+1, fieldName.length());
+            String subFieldName = fieldName.substring(fieldName.lastIndexOf(".") + 1, fieldName.length());
 
             Object ob_0;
             XStream xstream = getXStreamInstance();
@@ -111,7 +114,7 @@ public class StateCapture implements IStateCapture {
             try {
                 Class c = Class.forName(className);
                 Field[] fieldList = c.getDeclaredFields();
-                for (int i=0; i< fieldList.length; i++) {
+                for (int i = 0; i < fieldList.length; i++) {
                     if (!fieldList[i].getName().equals(subFieldName)) {
                         continue;
                     }
@@ -120,8 +123,7 @@ public class StateCapture implements IStateCapture {
                         Field modifiersField = Field.class.getDeclaredField("modifiers");
                         modifiersField.setAccessible(true);
                         modifiersField.setInt(fieldList[i], fieldList[i].getModifiers() & ~Modifier.FINAL);
-                    }
-                    catch (Exception e) {
+                    } catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
                         String outputPrivateError = fieldName + " reflectionError: " + e + "\n";
                         Files.write(Paths.get(reflectionFile), outputPrivateError.getBytes(),
                                 StandardOpenOption.APPEND);
@@ -165,17 +167,18 @@ public class StateCapture implements IStateCapture {
                         String output = fieldName + " set\n";
                         Files.write(Paths.get(reflectionFile), output.getBytes(),
                                 StandardOpenOption.APPEND);
-                    } catch (Exception e) {
+                    } catch (IllegalArgumentException | IllegalAccessException | NoSuchMethodException
+                            | SecurityException | InvocationTargetException e) {
                         e.printStackTrace();
                         String outputNormalError = fieldName + " reflectionError: " + e + "\n";
                         Files.write(Paths.get(reflectionFile), outputNormalError.getBytes(),
                                 StandardOpenOption.APPEND);
                     }
                 }
-            } catch (Exception e) { // *** check the kind of exception
+            } catch (ClassNotFoundException | SecurityException e) {
                 e.printStackTrace();
             }
-        } catch (Exception e) {
+        } catch (IOException e) {
             String output = fieldName + " deserializeError: " + e + "\n";
             Files.write(Paths.get(reflectionFile), output.getBytes(),
                     StandardOpenOption.APPEND);
@@ -185,11 +188,11 @@ public class StateCapture implements IStateCapture {
     @Override
     public void capture() {
         try {
-            String state = Configuration.config().getProperty("statecapture.state", "");
-            if (subxmlFold.isEmpty() || rootFile.isEmpty()) {
+            if (xmlFold.isEmpty() || rootFile.isEmpty()) {
                 System.out.println("WARNING: The subxml folder or root folder are not provided, thus it will not do capturing.");
                 return;
             }
+            String state = Configuration.config().getProperty("statecapture.state", "");
             if (!state.equals("eagerload")) {
                 capture_real();
             } else {
@@ -209,35 +212,31 @@ public class StateCapture implements IStateCapture {
     private void capture_real() throws IOException {
         PrintWriter writer;
 
-        String subxmlDir = createSubxmlFold();
+        String xmlDir = createXmlFold();
 
         Set<String> allFieldName = new HashSet<String>();
         Class[] loadedClasses = MainAgent.getInstrumentation().getAllLoadedClasses();
         String rootFold = rootFile.substring(0, rootFile.lastIndexOf("/"));
         File file = new File(rootFold + "/eagerLoadingFields.txt");
         if (file.exists()) {
-            try {
-                List<Class> list = new ArrayList(Arrays.asList(loadedClasses));
-                String tmp2Path = rootFold + "/eagerLoadingFields.txt";
-                Set<String> tmp2Classes = readFileContentsAsSet(tmp2Path);
-                for (String key : tmp2Classes) {
-                    try {
-                        Class tmp = Class.forName(key);
-                        list.add(0, tmp);
-                    } catch (ClassNotFoundException cnfe) {
-                        cnfe.printStackTrace();
-                        continue;
-                    } catch (NoClassDefFoundError ncdfe) {
-                        ncdfe.printStackTrace();
-                        continue;
-                    }
+            List<Class> list = new ArrayList(Arrays.asList(loadedClasses));
+            String tmp2Path = rootFold + "/eagerLoadingFields.txt";
+            Set<String> tmp2Classes = readFileContentsAsSet(tmp2Path);
+            for (String key : tmp2Classes) {
+                try {
+                    Class tmp = Class.forName(key);
+                    list.add(0, tmp);
+                } catch (ClassNotFoundException cnfe) {
+                    cnfe.printStackTrace();
+                    continue;
+                } catch (NoClassDefFoundError ncdfe) {
+                    ncdfe.printStackTrace();
+                    continue;
                 }
-                Class[] arrayClasses = new Class[list.size()];
-                list.toArray(arrayClasses);
-                loadedClasses = arrayClasses;
-            } catch (Exception e) {
-                e.printStackTrace();
             }
+            Class[] arrayClasses = new Class[list.size()];
+            list.toArray(arrayClasses);
+            loadedClasses = arrayClasses;
         }
 
         for (Class c : loadedClasses) {
@@ -267,9 +266,6 @@ public class StateCapture implements IStateCapture {
                 allFields.addAll(Arrays.asList(fields));
             } catch (NoClassDefFoundError e) {
                 e.printStackTrace();
-                continue;
-            } catch (Exception exception) {
-                exception.printStackTrace();
                 continue;
             }
             // prepare for the subxml fold
@@ -303,8 +299,8 @@ public class StateCapture implements IStateCapture {
                             if (!dirty) {
                                 nameToInstance.put(fieldName, instance);
 
-                                String ob4field = serializeOBs(instance);
-                                writer = new PrintWriter(subxmlDir + "/" + fieldName + ".xml", "UTF-8");
+                                String ob4field = serializeObj(instance);
+                                writer = new PrintWriter(xmlDir + "/" + fieldName + ".xml", "UTF-8");
                                 writer.println(ob4field);
                                 writer.close();
                             }
@@ -315,14 +311,19 @@ public class StateCapture implements IStateCapture {
                     } catch (NoClassDefFoundError ncdfe) {
                         ncdfe.printStackTrace();
                         continue;
-                    } catch (Exception exception) {
-                        exception.printStackTrace();
+                    } catch (IllegalAccessException iae) {
+                        iae.printStackTrace();
                         continue;
                     }
                 }
             }
         }
 
+        if (Configuration.config().getProperty("statecapture.allFieldsFile").isEmpty()) {
+            System.out.println("WARNING: The allFieldsFile file are not provided, thus it can not create a writer to " +
+                    "write all fields to this field.");
+            return;
+        }
         writer = new PrintWriter(Configuration.config().getProperty("statecapture.allFieldsFile"), "UTF-8");
         for (String ff : allFieldName) {
             writer.println(ff);
@@ -376,14 +377,14 @@ public class StateCapture implements IStateCapture {
         return true;
     }
 
-    String createSubxmlFold() {
-        String subxmlDir = "";
-        subxmlDir = subxmlFold;
-        File theDir = new File(subxmlDir);
+    String createXmlFold() {
+        String xmlDir = "";
+        xmlDir = xmlFold;
+        File theDir = new File(xmlDir);
         if (!theDir.exists()) {
             theDir.mkdirs();
         }
-        return subxmlDir;
+        return xmlDir;
     }
 
     /**
@@ -445,7 +446,7 @@ public class StateCapture implements IStateCapture {
         return s;
     }
 
-    private String serializeOBs(Object ob) {
+    private String serializeObj(Object ob) {
         XStream xstream = getXStreamInstance();
         String s = "";
 
