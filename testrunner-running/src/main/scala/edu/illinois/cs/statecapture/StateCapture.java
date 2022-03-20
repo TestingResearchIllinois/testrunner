@@ -156,6 +156,7 @@ public class StateCapture implements IStateCapture {
                         } catch (NullPointerException npex) {
                             npex.printStackTrace();
                         }
+                        // the purpose is to serialize/deserialize the object wrapped within a ThreadLocal.
                         if (threadLocal) {
                             Object tmp = fieldList[i].get(null);
                             ((ThreadLocal)tmp).set(ob_0);
@@ -291,19 +292,11 @@ public class StateCapture implements IStateCapture {
                             if (instance instanceof ThreadLocal) {
                                 instance = ((ThreadLocal)instance).get();
                             }
-                            LinkedHashMap<String, Object> nameToInstance_temp = new LinkedHashMap<String, Object>();
-                            nameToInstance_temp.put(fieldName, instance);
-
-                            dirty = false;
-                            serializeRoots(nameToInstance_temp);
-                            if (!dirty) {
-                                nameToInstance.put(fieldName, instance);
-
-                                String ob4field = serializeObj(instance);
-                                writer = new PrintWriter(xmlDir + "/" + fieldName + ".xml", "UTF-8");
-                                writer.println(ob4field);
-                                writer.close();
-                            }
+                            nameToInstance.put(fieldName, instance);
+                            String ob4field = serializeObj(instance);
+                            writer = new PrintWriter(xmlDir + "/" + fieldName + ".xml", "UTF-8");
+                            writer.println(ob4field);
+                            writer.close();
                         }
                     } catch (OutOfMemoryError ofme) {
                         ofme.printStackTrace();
@@ -414,38 +407,11 @@ public class StateCapture implements IStateCapture {
     }
 
     /**
-     * This is the method that calls XStream to serialize the state map into a string.
+     * This is the method that calls XStream to serialize the object into a string.
      *
-     * @param  state  the string to object map representing the roots of the state
-     * @return        string representing the serialized input state
+     * @param  ob  the object that need to be serialized
+     * @return        string representing the serialized input object
      */
-    private String serializeRoots(Map<String, Object> state) {
-        XStream xstream = getXStreamInstance();
-        String s = "";
-
-        try {
-            s = xstream.toXML(state);
-        } catch (Exception exception) {
-            // In case serialization fails, mark the StateCapture for this test
-            // as dirty, meaning it should be ignored
-            exception.printStackTrace();
-            dirty = true;
-        } catch (OutOfMemoryError error) {
-            error.printStackTrace();
-            dirty = true;
-        }
-        try {
-            s = sanitizeXmlChars(s);
-        } catch (Exception exception) {
-            exception.printStackTrace();
-            dirty = true;
-        } catch (OutOfMemoryError error) {
-            error.printStackTrace();
-            dirty = true;
-        }
-        return s;
-    }
-
     private String serializeObj(Object ob) {
         XStream xstream = getXStreamInstance();
         String s = "";
