@@ -36,7 +36,7 @@ public class MapConverterHelper {
         final Object key = readCompleteItem.invoke(converter, reader, context, map);
         UnmarshalChain.pushNode(UnmarshalChain.makeUnmarshalMapEntryNode(key)); // Try getting the key and putting it in the chain to map to the value
         Object value = null;
-        int level = reader.getLevel();
+        String nodeName = reader.getNodeName();
         try {
             value = readCompleteItem.invoke(converter, reader, context, map);
         } catch (ConversionException ce) {
@@ -51,7 +51,7 @@ public class MapConverterHelper {
             }
         } finally {
             // Make sure level moves up to the proper location after this kind of exception
-            while (reader.getLevel() > level) {
+            while (reader.getNodeName() != nodeName) {
                 reader.moveUp();
             }
             UnmarshalChain.popNode();

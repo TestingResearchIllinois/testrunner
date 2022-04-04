@@ -15,7 +15,7 @@ public class TreeMapConverter extends com.thoughtworks.xstream.converters.collec
 
     @Override
     protected void putCurrentEntryIntoMap(final HierarchicalStreamReader reader, final UnmarshallingContext context,
-                                          final Map<?, ?> map, final Map<?, ?> target) {
+                                          final Map map, final Map target) {
         try {
             MapConverterHelper.putCurrentEntryIntoMap(reader, context, map, target, this);
         } catch (NoSuchMethodException e) {

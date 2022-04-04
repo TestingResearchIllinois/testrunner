@@ -71,15 +71,13 @@ public class TestListener extends RunListener {
         }
 
         String phase = Configuration.config().getProperty("statecapture.phase", "");
-        if (phase.equals("capture_after")) {
-            if (Configuration.config().getProperty("statecapture.testname").equals(fullTestName)) {
-                StateCapture sc = new StateCapture(fullTestName);//CaptureFactory.StateCapture(fullTestName);
+        if (Configuration.config().getProperty("statecapture.testname").equals(fullTestName)) {
+            if (phase.equals("capture_after")) {
+                StateCapture sc = new StateCapture(fullTestName);
                 sc.capture();
             }
-        }
-        else if (phase.equals("load")) {
-            if (Configuration.config().getProperty("statecapture.testname").equals(fullTestName)) {
-                // reflect one field each time
+            else if (phase.equals("load")) {
+                // load one field each time
                 String fieldName = Configuration.config().getProperty("statecapture.fieldName", "");
 
                 if (!fieldName.isEmpty()) {

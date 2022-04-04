@@ -66,7 +66,7 @@ public class StateCapture implements IStateCapture {
     private static final LinkedHashMap<String, Object> nameToInstance = new LinkedHashMap<String, Object>();
 
     //for reflection and deserialization
-    private String xmlFold;
+    private String xmlDir;
     private String rootFile;
     private String reflectionFile;
 
@@ -92,23 +92,23 @@ public class StateCapture implements IStateCapture {
     }
 
     private void setup() {
-        xmlFold = Configuration.config().getProperty("statecapture.subxmlFold");
+        xmlDir = Configuration.config().getProperty("statecapture.subxmlFold");
         rootFile = Configuration.config().getProperty("statecapture.rootFile");
         reflectionFile = Configuration.config().getProperty("statecapture.reflectionFile");
     }
 
     public void load(String fieldName) throws IOException {
-        if (xmlFold.isEmpty() || reflectionFile.isEmpty()) {
+        if (xmlDir.isEmpty() || reflectionFile.isEmpty()) {
             System.out.println("WARNING: The subxml folder or reflection file are not provided, thus it will not do loading.");
             return;
         }
         try {
-            String path0 = xmlFold + "/" + fieldName + ".xml";
+            String path0 = xmlDir + File.separator + fieldName + ".xml";
             String state0 = readFile(path0);
             String className = fieldName.substring(0, fieldName.lastIndexOf("."));
             String subFieldName = fieldName.substring(fieldName.lastIndexOf(".") + 1, fieldName.length());
 
-            Object ob_0;
+            Object obj;
             XStream xstream = getXStreamInstance();
 
             try {
@@ -129,41 +129,43 @@ public class StateCapture implements IStateCapture {
                                 StandardOpenOption.APPEND);
                     }
                     try {
-                        ob_0 = fieldList[i].get(null);
+                        obj = fieldList[i].get(null);
                         boolean threadLocal = false;
-                        if (ob_0 instanceof ThreadLocal) {
+                        if (obj instanceof ThreadLocal) {
                             threadLocal = true;
                         }
                         try {
                             // directly invoke reset when dealing with a Mockito mock object
-                            if (Mockito.mockingDetails(ob_0).isMock()) {
+                            if (Mockito.mockingDetails(obj).isMock()) {
                                 Method m = Mockito.class.getDeclaredMethod("reset", Object[].class);
-                                m.invoke(null, new Object[]{new Object[]{ob_0}});
+                                m.invoke(null, new Object[]{new Object[]{obj}});
                             } else {
                                 UnmarshalChain.reset();
                                 UnmarshalChain.initializeChain(fieldList[i].getDeclaringClass().getName(), fieldList[i].getName());
-                                ob_0 = xstream.fromXML(state0);
+                                obj = xstream.fromXML(state0);
                             }
-                        } catch (NoSuchMethodError nsme) {
+                        } catch (NoSuchMethodError nsme) { // In case the Mockito reset does not apply, still try to load from XML
                             UnmarshalChain.reset();
                             UnmarshalChain.initializeChain(fieldList[i].getDeclaringClass().getName(), fieldList[i].getName());
-                            ob_0 = xstream.fromXML(state0);
+                            obj = xstream.fromXML(state0);
                         }
-                        try {
-                            if (AccessibleObject.class.isAssignableFrom(ob_0.getClass())) {
-                                ((AccessibleObject) ob_0).setAccessible(true);
-                            }
-                        } catch (NullPointerException npex) {
-                            npex.printStackTrace();
+                        if (obj == null) {
+                            System.out.println("Unable to construct the relevant object during load");
+                            return;
+                        }
+                        if (AccessibleObject.class.isAssignableFrom(obj.getClass())) {
+                            ((AccessibleObject) obj).setAccessible(true);
                         }
                         // the purpose is to serialize/deserialize the object wrapped within a ThreadLocal.
                         if (threadLocal) {
                             Object tmp = fieldList[i].get(null);
-                            ((ThreadLocal)tmp).set(ob_0);
-                            ob_0 = tmp;
+                            ((ThreadLocal)tmp).set(obj);
+                            obj = tmp;
                         }
 
-                        FieldUtils.writeField(fieldList[i], (Object)null, ob_0, true);
+                        if (!Mockito.mockingDetails(obj).isMock()) {
+                            FieldUtils.writeField(fieldList[i], (Object) null, obj, true);
+                        }
 
                         String output = fieldName + " set\n";
                         Files.write(Paths.get(reflectionFile), output.getBytes(),
@@ -178,8 +180,12 @@ public class StateCapture implements IStateCapture {
                 }
             } catch (ClassNotFoundException | SecurityException e) {
                 e.printStackTrace();
+                String output = fieldName + " deserializeError: " + e + "\n";
+                Files.write(Paths.get(reflectionFile), output.getBytes(),
+                        StandardOpenOption.APPEND);
             }
         } catch (IOException e) {
+            e.printStackTrace();
             String output = fieldName + " deserializeError: " + e + "\n";
             Files.write(Paths.get(reflectionFile), output.getBytes(),
                     StandardOpenOption.APPEND);
@@ -189,8 +195,8 @@ public class StateCapture implements IStateCapture {
     @Override
     public void capture() {
         try {
-            if (xmlFold.isEmpty() || rootFile.isEmpty()) {
-                System.out.println("WARNING: The subxml folder or root folder are not provided, thus it will not do capturing.");
+            if (xmlDir.isEmpty() || rootFile.isEmpty()) {
+                System.out.println("WARNING: The xml directory or root file are not provided, thus it will not do capturing.");
                 return;
             }
             String state = Configuration.config().getProperty("statecapture.state", "");
@@ -213,20 +219,18 @@ public class StateCapture implements IStateCapture {
     private void capture_real() throws IOException {
         PrintWriter writer;
 
-        String xmlDir = createXmlFold();
+        createXmlDir();
 
         Set<String> allFieldName = new HashSet<String>();
         Class[] loadedClasses = MainAgent.getInstrumentation().getAllLoadedClasses();
-        String rootFold = rootFile.substring(0, rootFile.lastIndexOf("/"));
-        File file = new File(rootFold + "/eagerLoadingFields.txt");
-        if (file.exists()) {
-            List<Class> list = new ArrayList(Arrays.asList(loadedClasses));
-            String tmp2Path = rootFold + "/eagerLoadingFields.txt";
-            Set<String> tmp2Classes = readFileContentsAsSet(tmp2Path);
-            for (String key : tmp2Classes) {
+        File eagerLoadFile = new File(Configuration.config().getProperty("statecapture.eagerloadfile", ""));
+        if (eagerLoadFile.exists()) {
+            List<Class> loadedClassesList = new ArrayList(Arrays.asList(loadedClasses));
+            Set<String> eagerLoadedClasses = readFileContentsAsSet(eagerLoadFile.toPath().toString());
+            for (String clz : eagerLoadedClasses) {
                 try {
-                    Class tmp = Class.forName(key);
-                    list.add(0, tmp);
+                    Class tmp = Class.forName(clz);
+                    loadedClassesList.add(tmp);
                 } catch (ClassNotFoundException cnfe) {
                     cnfe.printStackTrace();
                     continue;
@@ -235,8 +239,8 @@ public class StateCapture implements IStateCapture {
                     continue;
                 }
             }
-            Class[] arrayClasses = new Class[list.size()];
-            list.toArray(arrayClasses);
+            Class[] arrayClasses = new Class[loadedClassesList.size()];
+            loadedClassesList.toArray(arrayClasses);
             loadedClasses = arrayClasses;
         }
 
@@ -244,18 +248,7 @@ public class StateCapture implements IStateCapture {
             // Ignore classes in standard java to get top-level
             // TODO(gyori): make this read from file or config option
             String clz = c.getName();
-            if ((clz.contains("java.") && !clz.startsWith("java.lang.System"))
-                || (clz.contains("javax.") && !clz.startsWith("javax.cache.Caching"))
-                || clz.contains("javafx.")
-                || clz.contains("jdk.")
-                || clz.contains("scala.")
-                || clz.contains("sun.")
-                || clz.contains("edu.illinois.cs")
-                || clz.contains("org.custommonkey.xmlunit")
-                || clz.contains("org.junit")
-                || clz.contains("statecapture.com.")
-                || clz.contains("statecapture.org.")
-                || clz.equals("com.openpojo.reflection.impl.AClassWithBadMethod__Generated_OpenPojo")) {
+            if (!shouldCaptureClass(clz)) {
                 continue;
             }
 
@@ -269,7 +262,6 @@ public class StateCapture implements IStateCapture {
                 e.printStackTrace();
                 continue;
             }
-            // prepare for the subxml fold
 
             for (Field f : allFields) {
                 String fieldName = getFieldFQN(f);
@@ -278,24 +270,26 @@ public class StateCapture implements IStateCapture {
                 if (Modifier.isStatic(f.getModifiers())
                     && !(Modifier.isFinal(f.getModifiers()) &&  f.getType().isPrimitive())) {
                     try {
-                        if (shouldCapture(f)) {
-                            allFieldName.add(fieldName);
-                            f.setAccessible(true);
+                        allFieldName.add(fieldName);
+                        f.setAccessible(true);
 
-                            Object instance;
-                            try {
-                                instance = f.get(null);
-                            } catch (NoClassDefFoundError ncdfe) {
-                                instance = null;
-                                ncdfe.printStackTrace();
-                            }
-                            if (instance instanceof ThreadLocal) {
-                                instance = ((ThreadLocal)instance).get();
-                            }
+                        Object instance;
+                        try {
+                            instance = f.get(null);
+                        } catch (NoClassDefFoundError ncdfe) {
+                            instance = null;
+                            ncdfe.printStackTrace();
+                        }
+                        // If it is actually of ThreadLocal type, we want the contents inside
+                        if (instance instanceof ThreadLocal) {
+                            instance = ((ThreadLocal)instance).get();
+                        }
+                        dirty = false;
+                        String obj4field = serializeObj(instance);
+                        if (!dirty) {
                             nameToInstance.put(fieldName, instance);
-                            String ob4field = serializeObj(instance);
-                            writer = new PrintWriter(xmlDir + "/" + fieldName + ".xml", "UTF-8");
-                            writer.println(ob4field);
+                            writer = new PrintWriter(xmlDir + File.separator + fieldName + ".xml", "UTF-8");
+                            writer.println(obj4field);
                             writer.close();
                         }
                     } catch (OutOfMemoryError ofme) {
@@ -312,12 +306,13 @@ public class StateCapture implements IStateCapture {
             }
         }
 
-        if (Configuration.config().getProperty("statecapture.allFieldsFile").isEmpty()) {
+        String allFieldsFile = Configuration.config().getProperty("statecapture.allFieldsFile");
+        if (allFieldsFile.isEmpty()) {
             System.out.println("WARNING: The allFieldsFile file are not provided, thus it can not create a writer to " +
                     "write all fields to this field.");
             return;
         }
-        writer = new PrintWriter(Configuration.config().getProperty("statecapture.allFieldsFile"), "UTF-8");
+        writer = new PrintWriter(allFieldsFile, "UTF-8");
         for (String ff : allFieldName) {
             writer.println(ff);
         }
@@ -335,49 +330,49 @@ public class StateCapture implements IStateCapture {
      * @throws IOException
      */
     private void capture_class() throws IOException {
+        String eagerLoadFileName = Configuration.config().getProperty("statecapture.eagerloadfile", "");
+        if (eagerLoadFileName.isEmpty()) {
+            System.out.println("Need to provide name of file to write what classes are loaded");
+            return;
+        }
         // get all loadable classes
         Class[] loadedClasses = MainAgent.getInstrumentation().getAllLoadedClasses();
         Set<String> classes = new HashSet<>();
         for (Class c : loadedClasses) {
-            String clz = c.getName();
-            if ((clz.contains("java.") && !clz.startsWith("java.lang.System"))
-                    || (clz.contains("javax.") && !clz.startsWith("javax.cache.Caching"))
-                    || clz.contains("javafx.")
-                    || clz.contains("jdk.")
-                    || clz.contains("scala.")
-                    || clz.contains("sun.")
-                    || clz.contains("edu.illinois.cs")
-                    || clz.contains("org.custommonkey.xmlunit")
-                    || clz.contains("org.junit")
-                    || clz.contains("statecapture.com.")
-                    || clz.contains("statecapture.org.")) {
-                continue;
+            if (shouldCaptureClass(c.getName())) {
+                classes.add(c.getName());
             }
-            classes.add(clz);
         }
 
-        // write to the eagerLoadingFields.txt file
-        String rootFold = rootFile.substring(0, rootFile.lastIndexOf("/"));
-        PrintWriter writer = new PrintWriter(rootFold + "/" + "eagerLoadingFields.txt", "UTF-8");
+        File eagerLoadFile = new File(eagerLoadFileName);
+        PrintWriter writer = new PrintWriter(eagerLoadFile, "UTF-8");
         for (String str : classes) {
             writer.println(str);
         }
         writer.close();
-
     }
 
-    protected boolean shouldCapture(Field f) {
+    private boolean shouldCaptureClass(String clz) {
+        if ((clz.contains("java.") && !clz.startsWith("java.lang.System"))
+                || (clz.contains("javax.") && !clz.startsWith("javax.cache.Caching"))
+                || clz.contains("javafx.")
+                || clz.contains("jdk.")
+                || clz.contains("scala.")
+                || clz.contains("sun.")
+                || clz.contains("edu.illinois.cs")
+                || clz.contains("org.custommonkey.xmlunit")
+                || clz.contains("org.junit")
+                || clz.contains("statecapture.com.")) {
+            return false;
+        }
         return true;
     }
 
-    String createXmlFold() {
-        String xmlDir = "";
-        xmlDir = xmlFold;
+    private void createXmlDir() {
         File theDir = new File(xmlDir);
         if (!theDir.exists()) {
             theDir.mkdirs();
         }
-        return xmlDir;
     }
 
     /**
@@ -423,7 +418,7 @@ public class StateCapture implements IStateCapture {
             // In case serialization fails, mark the StateCapture for this test
             // as dirty, meaning it should be ignored
             dirty = true;
-            throw e;
+            // throw e;
         }
         return s;
     }
@@ -465,6 +460,7 @@ public class StateCapture implements IStateCapture {
         xstream.omitField(java.lang.ref.SoftReference.class, "referent");
         xstream.omitField(java.lang.ref.Reference.class, "referent");
 
+        // Register all our custom converters that override the defaults, similar to how XStream registers its default converters
         xstream.registerConverter(new MapConverter(xstream.getMapper()), PRIORITY_NORMAL + 1);
         xstream.registerConverter(new TreeMapConverter(xstream.getMapper()), PRIORITY_NORMAL + 1);
         xstream.registerConverter(new EnumMapConverter(xstream.getMapper()), PRIORITY_NORMAL + 1);

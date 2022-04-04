@@ -48,7 +48,7 @@ public class MapConverter extends com.thoughtworks.xstream.converters.collection
 
     @Override
     protected void putCurrentEntryIntoMap(final HierarchicalStreamReader reader, final UnmarshallingContext context,
-                                          final Map<?, ?> map, final Map<?, ?> target) {
+                                          final Map map, final Map target) {
         try {
             MapConverterHelper.putCurrentEntryIntoMap(reader, context, map, target, this);
         } catch (NoSuchMethodException e) {

@@ -10,7 +10,7 @@ public class CustomElementIgnoringMapper extends ElementIgnoringMapper {
     }
 
     @Override
-    public boolean shouldSerializeMember(final Class<?> definedIn, final String fieldName) {
+    public boolean shouldSerializeMember(final Class definedIn, final String fieldName) {
         if (fieldsToOmit.contains(customKey(definedIn, fieldName))) {
             return false;
         } else if (definedIn == Object.class && isIgnoredElement(fieldName)) {
