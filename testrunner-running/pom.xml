@@ -130,9 +130,6 @@
                 <configuration>
                     <archive>
                         <addMavenDescriptor>false</addMavenDescriptor>
-                        <!--<manifest>
-                            <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
-                        </manifest>-->
                         <manifestFile>MANIFEST.MF</manifestFile>
                     </archive>
                 </configuration>
