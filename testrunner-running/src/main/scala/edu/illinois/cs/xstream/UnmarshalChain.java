@@ -68,7 +68,7 @@ public class UnmarshalChain {
                     throw new NoSuchFieldException("Somehow root is not static: " + staticFieldNode.className + ":" + staticFieldNode.fieldName);
                 }
                 curr = field.get(null);
-                // Instance field
+            // Instance field
             } else if (node instanceof UnmarshalFieldNode) {
                 UnmarshalFieldNode fieldNode = (UnmarshalFieldNode)node;
                 Class clz = Class.forName(fieldNode.className);
@@ -81,7 +81,7 @@ public class UnmarshalChain {
                     throw new NoSuchFieldException("Somehow current field is static: " + fieldNode.className + ":" + fieldNode.fieldName);
                 }
                 curr = field.get(curr);
-                // Map entry with key (assume current is a map)
+            // Map entry with key (assume current is a map)
             } else if (node instanceof UnmarshalMapEntryNode) {
                 UnmarshalMapEntryNode mapEntryNode = (UnmarshalMapEntryNode)node;
                 try {

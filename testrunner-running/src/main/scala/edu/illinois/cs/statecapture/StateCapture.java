@@ -92,7 +92,7 @@ public class StateCapture implements IStateCapture {
     }
 
     private void setup() {
-        xmlDir = Configuration.config().getProperty("statecapture.subxmlFold");
+        xmlDir = Configuration.config().getProperty("statecapture.xmlDir");
         rootFile = Configuration.config().getProperty("statecapture.rootFile");
         reflectionFile = Configuration.config().getProperty("statecapture.reflectionFile");
     }
@@ -199,8 +199,8 @@ public class StateCapture implements IStateCapture {
                 System.out.println("WARNING: The xml directory or root file are not provided, thus it will not do capturing.");
                 return;
             }
-            String state = Configuration.config().getProperty("statecapture.state", "");
-            if (!state.equals("eagerload")) {
+            String eagerload = Configuration.config().getProperty("statecapture.eagerload", "");
+            if (!eagerload.equals("true")) {
                 capture_real();
             } else {
                 capture_class();

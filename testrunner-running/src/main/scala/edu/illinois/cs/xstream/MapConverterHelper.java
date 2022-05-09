@@ -51,7 +51,7 @@ public class MapConverterHelper {
             }
         } finally {
             // Make sure level moves up to the proper location after this kind of exception
-            while (reader.getNodeName() != nodeName) {
+            while (!reader.getNodeName().equals(nodeName)) {
                 reader.moveUp();
             }
             UnmarshalChain.popNode();
