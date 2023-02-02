@@ -1,6 +1,7 @@
 package edu.illinois.cs.testrunner.util
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.time.format.DateTimeFormatter
 import java.time.{Instant, ZoneId}
 import scala.collection.mutable.HashSet
@@ -16,7 +17,7 @@ object Utility {
         val nameSet = HashSet[String]()
         while (curClz != null) {
             for (m <- curClz.getDeclaredMethods) {
-                if (!nameSet.contains(m.getName)) {
+                if (!nameSet.contains(m.getName) && Modifier.isPublic(m.getModifiers())) {
                     // exclude override method
                     methods.append(m)
                     nameSet.add(m.getName)
