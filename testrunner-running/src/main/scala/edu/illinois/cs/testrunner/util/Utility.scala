@@ -19,7 +19,7 @@ object Utility {
                 val paramsStr = m.getParameterTypes.map(c => c.getName).mkString(",")
                 val methodName = m.getName ++ "(" ++ paramsStr ++ ")"
                 if (!nameSet.contains(methodName)) {
-                    // exclude override method
+                    // exclude overridden method
                     methods.append(m)
                     nameSet.add(methodName)
                 }
