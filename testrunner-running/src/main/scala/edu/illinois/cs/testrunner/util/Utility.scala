@@ -16,10 +16,12 @@ object Utility {
         val nameSet = HashSet[String]()
         while (curClz != null) {
             for (m <- curClz.getDeclaredMethods) {
-                if (!nameSet.contains(m.getName)) {
+                val paramsStr = m.getParameterTypes.map(c => c.getName).mkString(",")
+                val methodName = m.getName ++ "(" ++ paramsStr ++ ")"
+                if (!nameSet.contains(methodName)) {
                     // exclude override method
                     methods.append(m)
-                    nameSet.add(m.getName)
+                    nameSet.add(methodName)
                 }
             }
             curClz = curClz.getSuperclass
