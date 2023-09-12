@@ -12,6 +12,7 @@ import edu.illinois.cs.testrunner.execution.Executor
 import edu.illinois.cs.testrunner.util._
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable.ListBuffer
 import scala.io.Source
 import scala.util.{Failure, Try}
 
@@ -38,6 +39,13 @@ trait Runner {
         if (Configuration.config().getProperty(ConfigProps.CAPTURE_STATE, false)) {
             builder.javaAgent(Paths.get(Configuration.config().getProperty("testplugin.javaagent")))
         }
+
+        val javaopts = Configuration.config().getProperty("testplugin.javaopts").split(",")
+        val javaoptsList = new ListBuffer[String]()
+        for (opt <- javaopts) {
+            javaoptsList += opt
+        }
+        builder.javaOpts(javaoptsList.toList)
 
         builder.environment(environment())
     }
