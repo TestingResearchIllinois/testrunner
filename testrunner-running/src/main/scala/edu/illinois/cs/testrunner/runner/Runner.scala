@@ -40,7 +40,7 @@ trait Runner {
             builder.javaAgent(Paths.get(Configuration.config().getProperty("testplugin.javaagent")))
         }
 
-        val javaopts = Configuration.config().getProperty("testplugin.javaopts").split(",")
+        val javaopts = Configuration.config().getProperty("testplugin.javaopts", "").split(",")
         val javaoptsList = new ListBuffer[String]()
         for (opt <- javaopts) {
             javaoptsList += opt
