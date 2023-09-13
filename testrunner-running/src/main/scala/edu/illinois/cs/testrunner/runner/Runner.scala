@@ -40,12 +40,16 @@ trait Runner {
             builder.javaAgent(Paths.get(Configuration.config().getProperty("testplugin.javaagent")))
         }
 
-        val javaopts = Configuration.config().getProperty("testplugin.javaopts", "").split(",")
-        val javaoptsList = new ListBuffer[String]()
-        for (opt <- javaopts) {
-            javaoptsList += opt
+        if (!Configuration.config().getProperty("testplugin.javaopts", "").equals("")) {
+            val javaopts = Configuration.config().getProperty("testplugin.javaopts", "").split(",")
+            val javaoptsList = new ListBuffer[String]()
+            for (opt <- javaopts) {
+                javaoptsList += opt
+            }
+            if (!javaoptsList.isEmpty) {
+                builder.javaOpts(javaoptsList.toList)
+            }
         }
-        builder.javaOpts(javaoptsList.toList)
 
         builder.environment(environment())
     }
