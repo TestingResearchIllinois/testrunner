@@ -1,5 +1,7 @@
 package edu.illinois.cs.testrunner.execution;
 
+import edu.illinois.cs.statecapture.StateCapture;
+import edu.illinois.cs.testrunner.configuration.Configuration;
 import org.junit.runner.Description;
 import org.junit.runner.notification.Failure;
 import org.junit.runner.notification.RunListener;
@@ -35,7 +37,16 @@ public class TestListener extends RunListener {
 
     @Override
     public void testStarted(Description description) throws Exception {
-        times.put(JUnitTestRunner.fullName(description), System.nanoTime());
+        String fullTestName = JUnitTestRunner.fullName(description);
+        times.put(fullTestName, System.nanoTime());
+
+        String phase = Configuration.config().getProperty("statecapture.phase", "");
+        if (Configuration.config().getProperty("statecapture.testname").equals(fullTestName)) {
+            if (phase.equals("capture_before")) {
+                StateCapture sc = new StateCapture(fullTestName);
+                sc.capture();
+            }
+        }
     }
 
     @Override
@@ -57,6 +68,24 @@ public class TestListener extends RunListener {
             testRuntimes.put(fullTestName, (System.nanoTime() - startTime) / 1E9);
         } else {
             System.out.println("Test finished but did not start: " + fullTestName);
+        }
+
+        String phase = Configuration.config().getProperty("statecapture.phase", "");
+        if (Configuration.config().getProperty("statecapture.testname").equals(fullTestName)) {
+            if (phase.equals("capture_after")) {
+                StateCapture sc = new StateCapture(fullTestName);
+                sc.capture();
+            }
+            else if (phase.equals("load")) {
+                // load one field each time
+                String fieldName = Configuration.config().getProperty("statecapture.fieldName", "");
+
+                if (!fieldName.isEmpty()) {
+                    StateCapture sc = new StateCapture(fullTestName);
+                    String diffField = fieldName.split(",")[0];
+                    sc.load(diffField);
+                }
+            }
         }
     }
 }
