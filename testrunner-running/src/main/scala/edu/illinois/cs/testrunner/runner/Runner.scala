@@ -16,6 +16,8 @@ import scala.collection.mutable.ListBuffer
 import scala.io.Source
 import scala.util.{Failure, Try}
 
+import java.util.logging.{Level, Logger}
+
 trait Runner {
     def outputPath(): Path
     def classpath(): String
@@ -56,36 +58,56 @@ trait Runner {
 
     def generateTestRunId(): String = System.currentTimeMillis() + "-" + UUID.randomUUID.toString
 
-    def runWithCp(cp: String, testOrder: Stream[String]): Try[TestRunResult] =
-        TempFiles.withSeq(testOrder)(path =>
-        TempFiles.withTempFile(outputPath =>
-        TempFiles.withProperties(Configuration.config().properties())(propertiesPath => {
-            val builder = makeBuilder(cp + File.pathSeparator + Configuration.config().getProperty("testplugin.classpath"))
+    val logger = Logger.getLogger(getClass.getName)
 
-            val info = execution(testOrder, builder)
+    def runWithCp(cp: String, testOrder: Stream[String]): Try[TestRunResult] = {
+        logger.log(Level.INFO, "runWithCp method is being executed")
 
-            val testRunId = generateTestRunId()
 
-            val exitCode = info.run(
-                    testRunId,
-                    framework().toString,
-                    path.toAbsolutePath.toString,
-                    propertiesPath.toAbsolutePath.toString,
-                    outputPath.toAbsolutePath.toString).exitValue()
+        TempFiles.withSeq(testOrder)(path => {
+            println(s"Temporary path created: $path") // Print after creating the sequence of test paths
 
-            if (exitCode == 0) {
-                autoClose(Source.fromFile(outputPath.toAbsolutePath.toString).bufferedReader())(reader =>
-                    Try(new Gson().fromJson(reader, classOf[TestRunResult])))
-            } else {
-                // Try to copy the output log so that it can be inspected
-                val failureLog = Paths.get("failing-test-output-" + testRunId)
-                Files.copy(info.outputPath, failureLog, StandardCopyOption.REPLACE_EXISTING)
-                Failure(new Exception("Non-zero exit code (output in " + failureLog.toAbsolutePath + "): " ++ exitCode.toString))
-            }
-        }))).flatten.flatten.flatten.flatten
+            TempFiles.withTempFile(outputPath => {
+                println(s"Temporary output path created: $outputPath") // Print after creating the temporary output file
+
+                TempFiles.withProperties(Configuration.config().properties())(propertiesPath => {
+                    println(s"Properties path created: $propertiesPath") // Print after creating the properties path
+
+                    val builder = makeBuilder(cp + File.pathSeparator + Configuration.config().getProperty("testplugin.classpath"))
+
+                    val info = execution(testOrder, builder)
+
+                    val testRunId = generateTestRunId()
+                    println(s"Generated testRunId: $testRunId") // Print the generated testRunId
+
+                    val exitCode = info.run(
+                        testRunId,
+                        framework().toString,
+                        path.toAbsolutePath.toString,
+                        propertiesPath.toAbsolutePath.toString,
+                        outputPath.toAbsolutePath.toString).exitValue()
+
+                    println(s"Execution finished with exit code: $exitCode") // Print the exit code
+
+                    if (exitCode == 0) {
+                        autoClose(Source.fromFile(outputPath.toAbsolutePath.toString).bufferedReader())(reader =>
+                            Try(new Gson().fromJson(reader, classOf[TestRunResult])))
+                    } else {
+                        // Try to copy the output log so that it can be inspected
+                        val failureLog = Paths.get("failing-test-output-" + testRunId)
+                        Files.copy(info.outputPath, failureLog, StandardCopyOption.REPLACE_EXISTING)
+                        println(s"Non-zero exit code. Output copied to: $failureLog") // Print the failure log location
+                        Failure(new Exception("Non-zero exit code (output in " + failureLog.toAbsolutePath + "): " ++ exitCode.toString))
+                    }
+                })
+            })
+        }).flatten.flatten.flatten.flatten
+    }
 }
 
+ 
 trait RunnerProvider[A <: Runner] {
     def withFramework(framework: TestFramework, classpath: String,
                       environment: java.util.Map[String, String], outputPath: Path): A
 }
+
