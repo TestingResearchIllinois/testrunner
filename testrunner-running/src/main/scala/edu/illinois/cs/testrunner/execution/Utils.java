@@ -8,6 +8,8 @@ public class Utils {
     private static final Pattern junit5BasicPattern = Pattern.compile(junit5BasicRegex);
     private static final String junit5NestedRegex = "\\[nested-class:([\\w.]+)\\]";
     private static final Pattern junit5NestedPattern = Pattern.compile(junit5NestedRegex);
+    private static final String junit5ParameterizedRegex = "\\[class:([\\w.]+).*\\[test-template:([\\w().]+).*\\[test-template-invocation:#([\\w.]+)";
+    private static final Pattern junit5ParameterizedPattern = Pattern.compile(junit5ParameterizedRegex);
     private static final String junit4Regex = "\\[test:(\\w+)\\(([\\w.]+)\\)";
     private static final Pattern junit4Pattern = Pattern.compile(junit4Regex);
 
@@ -17,6 +19,10 @@ public class Utils {
      * For JUnit 5:
      * uniqueId: [engine:junit-jupiter]/[class:com.luojl.demo.JUnit5DemoTest]/[method:TestC()]
      * full qualified name: com.luojl.demo.JUnit5DemoTest#TestC()
+     *
+     * For JUnit 5 parameterized test:
+     * uniqueId: [engine:junit-jupiter]/[class:com.luojl.demo.JUnit5DemoTest]/[method:TestC()][\[1\]]
+     * full qualified name: com.luojl.demo.JUnit5DemoTest#TestC()[1]
      *
      * For JUnit 5 nested test:
      * uniqueId: [engine:junit-jupiter]/[class:com.luojl.demo.InheritedTest]/[nested-class:NestedTest]/[method:NestedTestB()]
@@ -43,8 +49,23 @@ public class Utils {
 
             sb.append("#");
             sb.append(matcher.group(2));  // method
+
             return sb.toString();
         }
+        // try JUnit 5 parameterized pattern
+        matcher = junit5ParameterizedPattern.matcher(identifierUniqueId);
+        if (matcher.find()) {
+            StringBuilder sb = new StringBuilder();
+            sb.append(matcher.group(1));    // com.package.ClassName
+            sb.append("#");
+            sb.append(matcher.group(2));    // method
+            sb.append("[");
+            sb.append(matcher.group(3));    // parameter
+            sb.append("[");
+            sb.append("]");
+            return sb.toString();
+        }
+
         // fall back to JUnit 4
         matcher = junit4Pattern.matcher(identifierUniqueId);
         if (matcher.find()) {
